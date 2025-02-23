@@ -1,101 +1,184 @@
+"use client";
+
+import OllamaChat from "@/components/page/ollamaChat";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChatModel } from "@/lib/model/chatModel";
+import axios from "axios";
+import { EarthIcon, MoonIcon, PaperclipIcon, SunIcon } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [theme, setTheme] = useState("light");
+  const [input, setInput] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [chat, setChat] = useState<ChatModel[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const inputContainerRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const localTheme = localStorage.getItem("theme") || "light";
+    setTheme(localTheme);
+    document.documentElement.classList.toggle("dark", localTheme === "dark");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log(input);
+
+    setIsSubmitted(true);
+    setInput("");
+    setChat((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        name: input,
+        role: "user",
+        isError: false
+      },
+    ]);
+
+    setIsLoading(true);
+    ollamaChatCompletion();
+  };
+
+  const ollamaChatCompletion = async () => {
+    try {
+      const response = await axios.post(`/api/ollama`, {
+        model: "llama3.2:latest",
+        prompt: input,
+        stream: false,
+      });
+
+      setChat((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          name: response.data.data.response || "",
+          role: "Assistant",
+          isError: false
+        },
+      ]);
+
+      setIsLoading(false);
+    } catch (error: any) {
+      setIsLoading(false);
+      const {response} = error
+
+      let message = ""
+
+      if(!response){
+        toast.error('Something went wrong');
+        message = "Something went wrong,"
+      }
+      toast.error(response.data?.error || "Something went wrong");
+      message = (response.data?.error || "Something went wrong,")
+
+      setChat((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          name: message,
+          role: "Assistant",
+          isError: true
+        },
+      ]);
+    }
+
+
+  };
+
+  return (
+    <div className="min-h-screen p-3 bg-background-secondary text-gray-900 dark:text-gray-100">
+      <header className="flex justify-between items-center">
+        {theme === "light" ? (
+          <SunIcon
+            className="h-6 w-6 cursor-pointer text-yellow-500"
+            onClick={() => setTheme("dark")}
+          />
+        ) : (
+          <MoonIcon
+            className="h-6 w-6 cursor-pointer text-blue-300"
+            onClick={() => setTheme("light")}
+          />
+        )}
+
+        <div className="flex items-center space-x-3">
+          <Select>
+            <SelectTrigger className="w-[180px] focus:ring-0 dark:border-background-message dark:border">
+              <SelectValue placeholder="Models" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">llama 3</SelectItem>
+              <SelectItem value="2">deepseek</SelectItem>
+              <SelectItem value="3">claude 2</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+      </header>
+
+      <main
+        className={`relative flex ${
+          isSubmitted ? "justify-start " : "justify-center"
+        } items-center h-full flex-col min-h-[80vh]`}
+      >
+        {isSubmitted ? (
+          <OllamaChat chatList={chat} />
+        ) : (
+          <div className="flex items-center justify-center p-2 rounded-lg">
+            <Image
+              src="/logo/logo.svg" // Ensure the correct path is set
+              alt="Ollama UI"
+              width={150}
+              height={150}
+            />
+          </div>
+        )}
+
+        <form
+          onSubmit={handleSubmit}
+          ref={inputContainerRef}
+          className={`p-3 absolute top-[55%] transition-transform duration-700 ${
+            isSubmitted ? "translate-y-72" : "translate-y-5"
+          } flex flex-col border border-gray-300 dark:border-gray-900 shadow-lg rounded-lg bg-background mt-8 max-w-screen-md w-full`}
+        >
+          <Input
+            value={input}
+            onChange={handleInputChange}
+            placeholder="Ask a question"
+            className="border-none focus-visible:ring-0 shadow-none bg-transparent text-gray-900 dark:text-gray-100"
+          />
+          <div className="flex justify-between items-center mt-3 px-2">
+            <div className="flex items-center gap-3">
+              <div className="relative p-2 rounded-lg cursor-pointer bg-gray-200 dark:bg-background-secondary">
+                <PaperclipIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              </div>
+
+              <div className="relative p-2 rounded-lg cursor-pointer bg-gray-200 dark:bg-background-secondary">
+                <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              </div>
+            </div>
+          </div>
+        </form>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
