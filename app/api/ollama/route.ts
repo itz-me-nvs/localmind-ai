@@ -11,6 +11,9 @@ export async function POST(request: NextRequest) {
     // Parse JSON body from request
     const body = await request.json();
 
+    console.log(body);
+
+
     // Validate body parameters (optional)
     if (!body.model || !body.prompt) {
       return NextResponse.json(
@@ -28,6 +31,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: response.data });
   } catch (error: any) {
+    console.log(error);
+
     // Handle Axios errors
     if (axios.isAxiosError(error)) {
       if (error.response) {

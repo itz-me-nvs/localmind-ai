@@ -63,7 +63,7 @@ export default function Home() {
   const ollamaChatCompletion = async () => {
     try {
       const response = await axios.post(`/api/ollama`, {
-        model: "llama3.2:latest",
+        model: "llama3",
         prompt: input,
         stream: false,
       });
@@ -164,7 +164,7 @@ export default function Home() {
             value={input}
             onChange={handleInputChange}
             placeholder="Ask a question"
-            className="border-none focus-visible:ring-0 shadow-none bg-transparent text-gray-900 dark:text-gray-100"
+            className="border-none focus-visible:ring-0 shadow-none bg-transparent text-gray-900 dark:text-gray-100 break-words"
           />
           <div className="flex justify-between items-center mt-3 px-2">
             <div className="flex items-center gap-3">

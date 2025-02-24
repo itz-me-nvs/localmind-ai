@@ -70,7 +70,7 @@ export default function OllamaChat({ chatList }: { chatList: ChatModel[] }) {
                     <Markdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight]}
-                    components={{code: CodeBlock as any}}
+                    components={{code: CodeBlock as any, pre: CodeBlock as any}}
                     >
                         {item.name}
                         </Markdown>
