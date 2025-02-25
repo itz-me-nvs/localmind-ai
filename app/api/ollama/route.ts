@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
 
     // Make API request using Axios
     const response = await axios.post(`${OLLAMA_BASE_URL}/api/generate`, {
-      model: body.model || "llama3.2:latest", // Default model if not provided
-      prompt: body.prompt || "hello",
+      model: body.model, // Default model if not provided
+      prompt: body.prompt,
       stream: body.stream ?? false, // Default to false if not provided
     });
 
