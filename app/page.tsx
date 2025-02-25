@@ -8,11 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { OLLAMA_BASE_URL } from "@/lib/constants/common.constant";
 import { ChatModel } from "@/lib/model/chatModel";
 import { EarthIcon, MoonIcon, PaperclipIcon, SunIcon } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 export default function Home() {
   const [theme, setTheme] = useState("light");
@@ -38,7 +38,6 @@ export default function Home() {
   const handleInputChange = (e: React.FormEvent<HTMLDivElement>) => {
     const textContent = e.currentTarget.textContent || "";
     setInput(textContent);
-    console.log(textContent.length, placeHolderRef);
 
     if (placeHolderRef.current && textContent.length <= 0) {
       placeHolderRef.current.setAttribute("data-placeholder", "Ask anything");
@@ -55,7 +54,6 @@ export default function Home() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(input);
 
     setIsSubmitted(true);
     setInput("");
@@ -84,133 +82,71 @@ export default function Home() {
 
   const ollamaChatCompletion = async () => {
     try {
-      // const response = await axios.post(`/api/ollama`, {
-      //   model: "qwen2.5:0.5b", // llama3.2:latest
-      //   prompt: input,
-      //   stream: true,
-      // });
-
-      const response = await fetch("/api/ollama", {
+      const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            model: "qwen2.5:0.5b", // llama3.2:latest
-        prompt: input,
-        stream: true,
+          model: "qwen2.5:0.5b", // Adjust model as needed
+          prompt: input,
+          stream: true,
         }),
       });
 
-       const reader = response.body!.getReader();
+      if (!response.body) throw new Error("Readable stream not available");
+
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
-
       let result = "";
-
-      while(true){
-        const { value } = await reader.read();
-        const text = decoder.decode(value || new Uint8Array(),{stream: true});
-
-        console.log("text", text);
-      }
-
-
-
-
-      // while (true) {
-      //   const { value, done } = await reader.read();
-      //   console.log("value", value);
-
-      // }
-
-      // const rawResponse = await response.text();
-      // console.log("rawResponse", rawResponse);
-
-      // const responseObjects = rawResponse.trim().split("\n").map(line => JSON.parse(line));
-      // console.log("responseObjects", responseObjects);
-
-      // // console.log("responseObjects", responseObjects);
-
-      // responseObjects.forEach((response) => {
-      //   try {
-
-      //     const jsonString = response.data.trim().split("\n")
-      //     const parsedResponses = jsonString.map((json:any) => JSON.parse(json));
-
-      //     console.log("parsedResponses", parsedResponses);
-
-
-      //   } catch (error) {
-      //     console.error(error);
-      //   }
-      // }
-      // );
-
-
-
-      // const reader = response.body!.getReader();
-      // const decoder = new TextDecoder();
-
-      // let result = "";
-
-      // while (true) {
-      //   const { value, done } = await reader.read();
-      //   if (done) break;
-
-      //   const chunk = decoder.decode(value, {stream: true});
-      //   const data = chunk.trim().split("\n").filter(Boolean);
-
-      //   console.log(data);
-
-
-      //   for (const line of data) {
-      //    try {
-      //     const parsed = JSON.parse(line);
-      //     console.log("Parsed Chunk:", parsed.response);
-
-      //     result += parsed.response;
-
-      //     console.log("Streamed Chunk:", parsed.response);
-      //    } catch (error) {
-      //       console.error(error);
-      //    }
-      //   }
-      // }
-
-      // console.log(result);
-
-
-      // setChat((prev) => [
-      //   ...prev,
-      //   {
-      //     id: prev.length + 1,
-      //     name: response.data.data.response || "",
-      //     role: "Assistant",
-      //     isError: false,
-      //   },
-      // ]);
-
-      // setIsLoading(false);
-    } catch (error: any) {
-      setIsLoading(false);
-      const { response } = error;
-
-      let message = "";
-
-      if (!response) {
-        toast.error("Something went wrong");
-        message = "Something went wrong,";
-      }
-      toast.error(response.data?.error || "Something went wrong");
-      message = response.data?.error || "Something went wrong,";
 
       setChat((prev) => [
         ...prev,
         {
           id: prev.length + 1,
-          name: message,
+          name: "",
           role: "Assistant",
-          isError: true,
+          isError: false,
         },
       ]);
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) break;
+
+        const textChunk = decoder.decode(value, { stream: true });
+
+        // Ensure new messages are properly split
+        const messages = textChunk.trim().split("\n").filter(Boolean);
+
+        for (const message of messages) {
+          try {
+            const parsed = JSON.parse(message);
+            if (parsed.response) {
+              result += parsed.response;
+
+              setChat((prev) => {
+                const updatedChat = [...prev];
+
+                return updatedChat.map((_, index) => {
+                  if (index == updatedChat.length - 1) {
+                    return {
+                      ..._,
+                      name: result,
+                    };
+                  }
+                  return _;
+                });
+              });
+            }
+          } catch (error) {
+            console.error("Error parsing JSON:", error);
+          }
+        }
+      }
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Streaming error:", error);
+      setIsLoading(false);
     }
   };
 
