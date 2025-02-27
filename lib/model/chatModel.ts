@@ -4,3 +4,9 @@ export interface ChatModel {
     role: string;
     isError: boolean
 }
+
+export interface OllamaModelList {
+    model: string;
+    size: string;
+    id: string;
+}

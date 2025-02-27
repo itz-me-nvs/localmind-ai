@@ -9,25 +9,53 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OLLAMA_BASE_URL } from "@/lib/constants/common.constant";
-import { ChatModel } from "@/lib/model/chatModel";
+import { ChatModel, OllamaModelList } from "@/lib/model/chatModel";
 import { EarthIcon, MoonIcon, PaperclipIcon, SunIcon } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
-
 export default function Home() {
   const [theme, setTheme] = useState("light");
   const [input, setInput] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [chat, setChat] = useState<ChatModel[]>([]);
+  const [modelList, setModelList] = useState<OllamaModelList[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('');
 
   const inputContainerRef = useRef<HTMLFormElement>(null);
   const placeHolderRef = useRef<HTMLParagraphElement>(null);
+
+  const MAX_MESSAGES = 5;
+  const MAX_TOKEN = 4000;
 
   useEffect(() => {
     const localTheme = localStorage.getItem("theme") || "light";
     setTheme(localTheme);
     document.documentElement.classList.toggle("dark", localTheme === "dark");
+
+    const getOllamaModels = async () => {
+      const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      let modelArr: OllamaModelList[] = [];
+
+      if (data?.models) {
+        data?.models.forEach((model: OllamaModelList) => {
+          modelArr.push({
+            model: model.model,
+            size: model.size,
+            id: model.model,
+          });
+        });
+
+        setModelList(modelArr);
+      }
+    };
+
+    getOllamaModels();
   }, []);
 
   useEffect(() => {
@@ -51,6 +79,10 @@ export default function Home() {
       handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
     }
   };
+
+  const handleModelChange = (name: string) => {
+    setSelectedModel(name);
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,12 +114,34 @@ export default function Home() {
 
   const ollamaChatCompletion = async () => {
     try {
-      const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+      let messages = [];
+
+      if (chat.length <= 0) {
+        messages.push({
+          role: "user",
+          content: input,
+        });
+      } else {
+        const trimmedMessages = chat.slice(-MAX_MESSAGES);
+        trimmedMessages.map((item) => {
+          messages.push({
+            role: item.role,
+            content: item.name,
+          });
+        });
+
+        messages.push({
+          role: "user",
+          content: input,
+        });
+      }
+
+      const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "qwen2.5:0.5b", // Adjust model as needed
-          prompt: input,
+          model: selectedModel || 'qwen2.5:0.5b', // Adjust model as needed
+          messages: messages,
           stream: true,
         }),
       });
@@ -121,8 +175,8 @@ export default function Home() {
         for (const message of messages) {
           try {
             const parsed = JSON.parse(message);
-            if (parsed.response) {
-              result += parsed.response;
+            if (parsed.message) {
+              result += parsed.message?.content;
 
               setChat((prev) => {
                 const updatedChat = [...prev];
@@ -166,14 +220,16 @@ export default function Home() {
         )}
 
         <div className="flex items-center space-x-3">
-          <Select>
-            <SelectTrigger className="w-[180px] focus:ring-0 dark:border-background-message dark:border">
+          <Select onValueChange={(value)=> handleModelChange(value)}>
+            <SelectTrigger className="w-[180px]  focus:ring-0 dark:border-background-message dark:border">
               <SelectValue placeholder="Models" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">llama 3</SelectItem>
-              <SelectItem value="2">deepseek</SelectItem>
-              <SelectItem value="3">claude 2</SelectItem>
+              {modelList.map((item, index) => (
+                <SelectItem key={item.id} value={item.model} >
+                  {item.model}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -205,7 +261,7 @@ export default function Home() {
         ref={inputContainerRef}
         className={` ${
           isSubmitted ? "top-[90%]" : "top-[70%]"
-        } -translate-y-1/2 p-3 absolute transition-all duration-700 m-auto -translate-x-1/2 left-1/2 flex flex-col border border-gray-300 dark:border-gray-900 shadow-lg rounded-lg bg-background max-w-screen-md w-full`}
+        } -translate-y-1/2 p-3 absolute transition-all duration-300 m-auto -translate-x-1/2 left-1/2 flex flex-col border border-gray-300 dark:border-gray-900 shadow-lg rounded-lg bg-background max-w-screen-md w-full`}
       >
         <div
           contentEditable={true}
