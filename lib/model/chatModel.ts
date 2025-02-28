@@ -10,3 +10,8 @@ export interface OllamaModelList {
     size: string;
     id: string;
 }
+
+export interface OllamaAPIChatRequestModel {
+    role: string;
+    content: string;
+}

@@ -9,7 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OLLAMA_BASE_URL } from "@/lib/constants/common.constant";
-import { ChatModel, OllamaModelList } from "@/lib/model/chatModel";
+import { ChatModel, OllamaAPIChatRequestModel, OllamaModelList } from "@/lib/model/chatModel";
+import axios from "axios";
 import { EarthIcon, MoonIcon, PaperclipIcon, SunIcon } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
@@ -18,7 +19,12 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [chat, setChat] = useState<ChatModel[]>([]);
+  const [chat, setChat] = useState<ChatModel[]>([{
+    role: "system",
+    name: "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
+    id: 0,
+    isError: false
+  }]);
   const [modelList, setModelList] = useState<OllamaModelList[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
 
@@ -34,12 +40,15 @@ export default function Home() {
     document.documentElement.classList.toggle("dark", localTheme === "dark");
 
     const getOllamaModels = async () => {
-      const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+
+      const response = await axios.get(`api/ollama/getModels`, {
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json'
         },
-      });
-      const data = await response.json();
+      })
+
+      const data = response.data;
+
       let modelArr: OllamaModelList[] = [];
 
       if (data?.models) {
@@ -112,36 +121,76 @@ export default function Home() {
     ollamaChatCompletion();
   };
 
+   const summarizeChatHistory = async(maxSummaryToken: number = 1000): Promise<string> => {
+   if(chat.length > 1){
+    let content = chat.slice(1, -MAX_MESSAGES).map((item: ChatModel)=> `${item.role}: ${item.name}`).join(" ");
+
+    const response = await axios.post('/api/ollama/generate', {
+     model: selectedModel || 'qwen2.5:0.5b',
+     prompt: `Summarize the following chat history: ${content}`,
+     stream: false
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+
+    })
+
+    const fullSummary = response?.data?.response || '';
+    console.log(fullSummary);
+
+
+    if(fullSummary.length <= maxSummaryToken) return fullSummary;
+
+    const summary = fullSummary.substring(0, maxSummaryToken);
+
+    return `${summary}...`;
+   }
+
+   return "";
+  }
+
   const ollamaChatCompletion = async () => {
     try {
-      let messages = [];
+      let messages:OllamaAPIChatRequestModel[] = [];
+      let chatSummary = ""
 
-      if (chat.length <= 0) {
-        messages.push({
-          role: "user",
-          content: input,
-        });
-      } else {
-        const trimmedMessages = chat.slice(-MAX_MESSAGES);
-        trimmedMessages.map((item) => {
-          messages.push({
-            role: item.role,
-            content: item.name,
-          });
-        });
+      // const trimmedMessages = chat.slice(-MAX_MESSAGES);
+      // trimmedMessages.map((item) => {
+      //   messages.push({
+      //     role: item.role,
+      //     content: item.name,
+      //   });
+      // });
 
-        messages.push({
-          role: "user",
-          content: input,
-        });
-      }
+      // messages.push({
+      //   role: "user",
+      //   content: input,
+      // });
+
+      console.log("chat.length", chat.length);
+
+
+
+      chatSummary = await summarizeChatHistory();
+      messages = [
+        {
+          role: 'system',
+          content: `Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information. ${chatSummary}`,
+        },
+        {
+          role: 'user',
+          content: input
+        }
+      ]
+      console.log(chatSummary);
 
       const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: selectedModel || 'qwen2.5:0.5b', // Adjust model as needed
-          messages: messages,
+          messages: messages ?? [],
           stream: true,
         }),
       });

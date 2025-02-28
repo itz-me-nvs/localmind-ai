@@ -28,7 +28,7 @@ export default function OllamaChat({ chatList }: { chatList: ChatModel[] }) {
         {chatList.map((item) => (
           <div
             key={item.id}
-
+            className={`${item.id == 0 ? "hidden" : ""}`}
           >
             <div className={`flex w-full items-start gap-3 text-wrap break-words whitespace-pre-wrap ${
               item.role === "user" ? "justify-end" : "justify-start mb-6"
