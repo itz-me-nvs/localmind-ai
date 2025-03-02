@@ -1,7 +1,11 @@
 1. UI Issues. ✅
 2. Memory Context. ✅
-3. Summarize the Memory to reduce token usage
+3. Summarize the Memory to reduce token usage. ✅
 4. Contextual Prompt
+  a. Response based tool suggestion.
+  b. Prompt Enhancer.
+  c. Tool Section.
+  d. React Form hook
+  e. Redux State Management.
 5. Performance & Error handling
-
 6. Testing.

@@ -1,6 +1,17 @@
 "use client";
 
 import OllamaChat from "@/components/page/ollamaChat";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -8,28 +19,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { OLLAMA_BASE_URL } from "@/lib/constants/common.constant";
-import { ChatModel, OllamaAPIChatRequestModel, OllamaModelList } from "@/lib/model/chatModel";
+import {
+  ChatModel,
+  OllamaAPIChatRequestModel,
+  OllamaModelList,
+} from "@/lib/model/chatModel";
+import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { EarthIcon, MoonIcon, PaperclipIcon, SunIcon } from "lucide-react";
+import {
+  CheckCheckIcon,
+  CopyIcon,
+  EarthIcon,
+  MoonIcon,
+  PlusIcon,
+  SparklesIcon,
+  SunIcon,
+  WrenchIcon,
+  XIcon,
+} from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import z from "zod";
+
+const FormScheme = z.object({
+  prompt: z.string().min(1, {
+    message: "Prompt is required",
+  }),
+});
+
 export default function Home() {
   const [theme, setTheme] = useState("light");
   const [input, setInput] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [chat, setChat] = useState<ChatModel[]>([{
-    role: "system",
-    name: "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
-    id: 0,
-    isError: false
-  }]);
+  const [chat, setChat] = useState<ChatModel[]>([
+    {
+      role: "system",
+      name: "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
+      id: 0,
+      isError: false,
+    },
+  ]);
   const [modelList, setModelList] = useState<OllamaModelList[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [promptModelOpen, setPromptModelOpen] = useState<boolean>(false);
+  const [promptEnhanceResult, setPromptEnhanceResult] = useState<string>("");
 
   const inputContainerRef = useRef<HTMLFormElement>(null);
   const placeHolderRef = useRef<HTMLParagraphElement>(null);
+  const [promptCopyStatus, setPromptCopyStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+
+  // Prompt Enhancer Formgroup
+  const form = useForm<z.infer<typeof FormScheme>>({
+    resolver: zodResolver(FormScheme),
+    defaultValues: {
+      prompt: "",
+    },
+  });
 
   const MAX_MESSAGES = 5;
   const MAX_TOKEN = 4000;
@@ -40,12 +91,11 @@ export default function Home() {
     document.documentElement.classList.toggle("dark", localTheme === "dark");
 
     const getOllamaModels = async () => {
-
       const response = await axios.get(`api/ollama/getModels`, {
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-      })
+      });
 
       const data = response.data;
 
@@ -72,6 +122,13 @@ export default function Home() {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
+  useEffect(() => {
+    if (promptModelOpen) {
+      form.reset(); // reset the form on intial render
+      setPromptEnhanceResult("");
+    }
+  }, [promptModelOpen]);
+
   const handleInputChange = (e: React.FormEvent<HTMLDivElement>) => {
     const textContent = e.currentTarget.textContent || "";
     setInput(textContent);
@@ -91,7 +148,7 @@ export default function Home() {
 
   const handleModelChange = (name: string) => {
     setSelectedModel(name);
-  }
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -121,81 +178,72 @@ export default function Home() {
     ollamaChatCompletion();
   };
 
-   const summarizeChatHistory = async(maxSummaryToken: number = 1000): Promise<string> => {
-   if(chat.length > 1){
-    let content = chat.slice(1, -MAX_MESSAGES).map((item: ChatModel)=> `${item.role}: ${item.name}`).join(" ");
+  const summarizeChatHistory = async (
+    maxSummaryToken: number = 1000
+  ): Promise<string> => {
+    if (chat.length > 1) {
+      let content = chat
+        .slice(1, -MAX_MESSAGES)
+        .map((item: ChatModel) => `${item.role}: ${item.name}`)
+        .join(" ");
 
-    const response = await axios.post('/api/ollama/generate', {
-     model: selectedModel || 'qwen2.5:0.5b',
-     prompt: `Summarize the following chat history: ${content}`,
-     stream: false
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      const response = await axios.post(
+        "/api/ollama/generate",
+        {
+          model: selectedModel || "qwen2.5:0.5b",
+          prompt: `Summarize the following chat history: ${content}`,
+          stream: false,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    })
+      const fullSummary = response?.data?.response || "";
+      console.log(fullSummary);
 
-    const fullSummary = response?.data?.response || '';
-    console.log(fullSummary);
+      if (fullSummary.length <= maxSummaryToken) return fullSummary;
 
+      const summary = fullSummary.substring(0, maxSummaryToken);
 
-    if(fullSummary.length <= maxSummaryToken) return fullSummary;
+      return `${summary}...`;
+    }
 
-    const summary = fullSummary.substring(0, maxSummaryToken);
-
-    return `${summary}...`;
-   }
-
-   return "";
-  }
+    return "";
+  };
 
   const ollamaChatCompletion = async () => {
     try {
-      let messages:OllamaAPIChatRequestModel[] = [];
-      let chatSummary = ""
-
-      // const trimmedMessages = chat.slice(-MAX_MESSAGES);
-      // trimmedMessages.map((item) => {
-      //   messages.push({
-      //     role: item.role,
-      //     content: item.name,
-      //   });
-      // });
-
-      // messages.push({
-      //   role: "user",
-      //   content: input,
-      // });
-
-      console.log("chat.length", chat.length);
-
-
+      let messages: OllamaAPIChatRequestModel[] = [];
+      let chatSummary = "";
 
       chatSummary = await summarizeChatHistory();
       messages = [
         {
-          role: 'system',
+          role: "system",
           content: `Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information. ${chatSummary}`,
         },
         {
-          role: 'user',
-          content: input
-        }
-      ]
+          role: "user",
+          content: input,
+        },
+      ];
       console.log(chatSummary);
 
       const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: selectedModel || 'qwen2.5:0.5b', // Adjust model as needed
+          model: selectedModel || "qwen2.5:0.5b", // Adjust model as needed
           messages: messages ?? [],
           stream: true,
         }),
       });
 
       if (!response.body) throw new Error("Readable stream not available");
+      setIsLoading(false);
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -246,10 +294,37 @@ export default function Home() {
           }
         }
       }
-      setIsLoading(false);
     } catch (error) {
       console.error("Streaming error:", error);
       setIsLoading(false);
+    }
+  };
+
+  async function OnSubmitPromptEnhance(data: z.infer<typeof FormScheme>) {
+    if (data.prompt) {
+      const response = await axios.post("/api/ollama/generate", {
+        model: selectedModel || "qwen2.5:0.5b",
+        prompt: `Improve the clarity, effectiveness, and engagement of the following prompt **without answering it**. Do not provide a response to the prompt itself; just refine its wording for better AI interaction:\n\n"${data.prompt}"`,
+        stream: false,
+      });
+
+      const enhancedPrompt = response?.data?.response || "";
+      setPromptEnhanceResult(enhancedPrompt);
+
+      console.log("response", enhancedPrompt);
+    }
+  }
+
+  const handleCopyPromptEnhance = async () => {
+    try {
+      await navigator.clipboard.writeText(promptEnhanceResult);
+      setPromptCopyStatus("success");
+      setTimeout(() => {
+        setPromptCopyStatus("idle");
+      }, 1000);
+    } catch (error) {
+      setPromptCopyStatus("error");
+      console.error("Failed to copy text:", error);
     }
   };
 
@@ -269,13 +344,13 @@ export default function Home() {
         )}
 
         <div className="flex items-center space-x-3">
-          <Select onValueChange={(value)=> handleModelChange(value)}>
+          <Select onValueChange={(value) => handleModelChange(value)}>
             <SelectTrigger className="w-[180px]  focus:ring-0 dark:border-background-message dark:border">
               <SelectValue placeholder="Models" />
             </SelectTrigger>
             <SelectContent>
               {modelList.map((item, index) => (
-                <SelectItem key={item.id} value={item.model} >
+                <SelectItem key={item.id} value={item.model}>
                   {item.model}
                 </SelectItem>
               ))}
@@ -292,7 +367,7 @@ export default function Home() {
         } items-center h-full flex-col`}
       >
         {isSubmitted ? (
-          <OllamaChat chatList={chat} />
+          <OllamaChat chatList={chat} isLoading={isLoading} />
         ) : (
           <div className="flex items-center justify-center p-2 rounded-lg">
             <Image
@@ -318,29 +393,118 @@ export default function Home() {
           onInput={handleInputChange}
           onKeyDown={handleKeyDown}
           suppressContentEditableWarning={true}
-          className="group ProseMirror border-none focus-visible:ring-0 focus:outline-none break-words overflow-auto min-h-[44px] max-h-32"
+          className="group flex items-center ProseMirror border-none focus-visible:ring-0 focus:outline-none break-words overflow-auto min-h-[44px] max-h-32"
           id="prompt-textarea"
           data-virtualkeyboard="true"
         >
           <p
             ref={placeHolderRef}
-            className="whitespace-pre-wrap text-gray-500 empty:before:content-[attr(data-placeholder)] dark:text-gray-400 placeholder"
+            className="whitespace-pre-wrap text-gray-500 empty:before:content-[attr(data-placeholder)] dark:text-gray-400 placeholder ml-[10px]"
             data-placeholder="Ask a question"
           ></p>
         </div>
 
         <div className="flex justify-between items-center mt-3 px-2">
           <div className="flex items-center gap-3">
-            <div className="relative p-2 rounded-lg cursor-pointer bg-gray-200 dark:bg-background-secondary">
-              <PaperclipIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+            <div
+              className="flex items-center gap-2 relative py-2 px-3 rounded-lg cursor-pointer bg-gray-200 dark:bg-background-secondary"
+              onClick={() => setPromptModelOpen(true)}
+            >
+              <PlusIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              <span className="text-gray-700 dark:text-gray-300">Prompt</span>
             </div>
 
-            <div className="relative p-2 rounded-lg cursor-pointer bg-gray-200 dark:bg-background-secondary">
+            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary">
+              <WrenchIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              <span className="text-gray-700 dark:text-gray-300">Tools</span>
+            </div>
+
+            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary opacity-70 pointer-events-none">
               <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              <span className="text-gray-700 dark:text-gray-300">Search</span>
             </div>
           </div>
         </div>
       </form>
+
+      <Dialog open={promptModelOpen} onOpenChange={setPromptModelOpen}>
+        <DialogContent className="max-w-[600px] max-h-[600px] h-auto overflow-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Prompt Enhancer{" "}
+              {/* <Badge className="ml-1" variant="secondary">
+                New
+              </Badge> */}
+            </DialogTitle>
+            <DialogDescription>
+              Make changes to your profile here. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(OnSubmitPromptEnhance)}
+                className="grid grid-cols-4 items-center gap-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="prompt"
+                  render={({ field }) => (
+                    <FormItem className="col-span-3">
+                      <Input
+                        className="focus-visible:ring-0"
+                        placeholder="Type your prompt here."
+                        {...field}
+                      />
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  className="flex items-center bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <SparklesIcon className="h-5 w-5" />
+                  <span>Enhance</span>
+                </Button>
+              </form>
+            </Form>
+          </div>
+          <DialogFooter>
+            <div className="grid w-full gap-2 relative">
+              <Textarea
+                rows={1}
+                cols={1}
+                readOnly
+                value={promptEnhanceResult}
+                className="min-h-[80px] focus-visible:ring-0 pr-10"
+              />
+              {promptCopyStatus == "idle" && (
+                <CopyIcon
+                  className="h-5 w- absolute top-2 right-2 cursor-pointer"
+                  onClick={handleCopyPromptEnhance}
+                />
+              )}
+
+              {promptCopyStatus == "success" && (
+                <CheckCheckIcon
+                  className="h-5 w- absolute top-2 right-2"
+                  onClick={handleCopyPromptEnhance}
+                />
+              )}
+
+              {promptCopyStatus == "error" && (
+                <XIcon
+                  className="h-5 w- absolute top-2 right-2"
+                  onClick={handleCopyPromptEnhance}
+                />
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
