@@ -67,6 +67,7 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [promptModelOpen, setPromptModelOpen] = useState<boolean>(false);
   const [promptEnhanceResult, setPromptEnhanceResult] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
   const inputContainerRef = useRef<HTMLFormElement>(null);
   const placeHolderRef = useRef<HTMLParagraphElement>(null);
@@ -91,26 +92,39 @@ export default function Home() {
     document.documentElement.classList.toggle("dark", localTheme === "dark");
 
     const getOllamaModels = async () => {
-      const response = await axios.get(`api/ollama/getModels`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = response.data;
-
-      let modelArr: OllamaModelList[] = [];
-
-      if (data?.models) {
-        data?.models.forEach((model: OllamaModelList) => {
-          modelArr.push({
-            model: model.model,
-            size: model.size,
-            id: model.model,
-          });
+      try {
+        const response = await axios.get(`api/ollama/getModels`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
         });
 
-        setModelList(modelArr);
+        console.log("response", response);
+
+        const data = response.data;
+
+        let modelArr: OllamaModelList[] = [];
+
+        if (data?.models) {
+          data?.models.forEach((model: OllamaModelList) => {
+            modelArr.push({
+              model: model.model,
+              size: model.size,
+              id: model.model,
+            });
+          });
+
+          setModelList(modelArr);
+        }
+      } catch (error: any) {
+        console.log("error", error);
+
+        const err = error?.response?.data;
+        if (err) {
+          setError(err.message);
+        }
+
+        throw new Error("Failed to fetch models");
       }
     };
 
