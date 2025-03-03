@@ -2,10 +2,40 @@
 2. Memory Context. ✅
 3. Summarize the Memory to reduce token usage. ✅
 4. Contextual Prompt
-  a. Response based tool suggestion.
-  b. Prompt Enhancer.
+  a. Response based tool suggestion. ❌
+  b. Prompt Enhancer.✅
   c. Tool Section.
-  d. React Form hook
-  e. Redux State Management.
+  d. React Form hook.✅
 5. Performance & Error handling
-6. Testing.
+6. Testing (Performance Metrics).
+
+
+Sidebar for Recent Chats.
+Storage in IndexedDB.
+Redux State Management.
+
+
+Tools
+
+1. Academic
+  a. translate
+  b. Rewrite
+  c. Elaborate/Short
+  d. Bullet Points
+
+2. Coding
+  a. Design UI
+  b. Error/Bug Fix
+  c. Unit Testing
+
+
+  useEffect(() => {
+  const handleResize = () => {
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
+  };
+
+  window.addEventListener("resize", handleResize);
+  return () => window.removeEventListener("resize", handleResize);
+}, []);

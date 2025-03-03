@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { OLLAMA_BASE_URL } from "@/lib/constants/common.constant";
+import { API_ERROR_CODE, OLLAMA_BASE_URL } from "@/lib/constants/common.constant";
 import {
   ChatModel,
   OllamaAPIChatRequestModel,
@@ -30,18 +30,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import {
   CheckCheckIcon,
+  Columns2Icon,
   CopyIcon,
   EarthIcon,
-  MoonIcon,
+  MessageSquareIcon,
+  PencilLine,
   PlusIcon,
+  SearchIcon,
   SparklesIcon,
-  SunIcon,
   WrenchIcon,
-  XIcon,
+  XIcon
 } from "lucide-react";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import z from "zod";
 
 const FormScheme = z.object({
@@ -74,6 +78,13 @@ export default function Home() {
   const [promptCopyStatus, setPromptCopyStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const chatHistory = [
+    { id: 1, title: "Authentication Implementation", date: "Today" },
+    { id: 2, title: "API Routes Discussion", date: "Yesterday" },
+    { id: 3, title: "Database Setup", date: "2 days ago" },
+  ];
 
   // Prompt Enhancer Formgroup
   const form = useForm<z.infer<typeof FormScheme>>({
@@ -117,14 +128,28 @@ export default function Home() {
           setModelList(modelArr);
         }
       } catch (error: any) {
-        console.log("error", error);
-
-        const err = error?.response?.data;
-        if (err) {
-          setError(err.message);
+        const response = error?.response;
+        if(API_ERROR_CODE.INTERNAL_SERVER_ERROR === response?.status){
+          toast("Internal Server Error",{
+            style: {
+              backgroundColor: 'hsl(var(--destructive))',
+              color: 'hsl(var(--destructive-foreground))'
+            }
+          })
         }
+        else if(API_ERROR_CODE.SOMETHING_WENT_WRONG == response?.status){
+          // error style
+          toast("Something went wrong", {
 
-        throw new Error("Failed to fetch models");
+            style: {
+              backgroundColor: 'hsl(var(--destructive))',
+              color: 'hsl(var(--destructive-foreground))'
+            }
+          })
+        }
+        else if (API_ERROR_CODE.MODEL_NOT_FOUND == response?.status) {
+          redirect("/reload")
+        }
       }
     };
 
@@ -343,9 +368,9 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen p-3 mb-3 bg-background-secondary text-gray-900 dark:text-gray-100 overflow-hidden">
-      <header className="flex justify-between items-center">
-        {theme === "light" ? (
+    <div className="h-screen mb-3 bg-background-secondary text-gray-900 dark:text-gray-100 overflow-hidden">
+      <header className="flex justify-between items-center fixed top-[20px] right-[20px]">
+        {/* {theme === "light" ? (
           <SunIcon
             className="h-6 w-6 cursor-pointer text-yellow-500"
             onClick={() => setTheme("dark")}
@@ -355,10 +380,33 @@ export default function Home() {
             className="h-6 w-6 cursor-pointer text-blue-300"
             onClick={() => setTheme("light")}
           />
-        )}
+        )} */}
+
+{/* <div
+        className={`flex items-center justify-start transition-opacity duration-300 ease-in-out `}
+      >
+
+
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={`h-10 px-2 hover:bg-token-surface-hover rounded-lg ${
+            sidebarOpen ? "opacity-0" : "opacity-1"
+          }`}
+        >
+          <Columns2Icon className="h-6 w-6 cursor-pointer " />
+        </button>
+
+        <button className={`h-10 px-3 hover:bg-token-surface-hover rounded-lg ${
+          sidebarOpen ? "opacity-0" : "opacity-1"
+        }`}>
+          <PencilLine className="h-6 w-6 cursor-pointer" />
+        </button>
+
+
+      </div> */}
 
         <div className="flex items-center space-x-3">
-          <Select onValueChange={(value) => handleModelChange(value)}>
+          <Select onValueChange={(value) => handleModelChange(value)} defaultValue="qwen2.5:0.5b">
             <SelectTrigger className="w-[180px]  focus:ring-0 dark:border-background-message dark:border">
               <SelectValue placeholder="Models" />
             </SelectTrigger>
@@ -373,12 +421,68 @@ export default function Home() {
         </div>
       </header>
 
+
+
+
+       {/* Sidebar */}
+       <aside
+  className={`fixed inset-y-0 h-full left-0 z-40 flex flex-col shadow-xl bg-sidebar-surface-primary transition-all duration-300 ease-in-out ${
+    sidebarOpen ? "w-72" : "w-20"
+  } overflow-hidden`}
+>
+  {/* Top Section */}
+  <div className="flex h-16 items-center justify-between border-b px-4">
+    {/* Sidebar Toggle Button */}
+    <button
+      onClick={() => setSidebarOpen(!sidebarOpen)}
+      className="h-10 px-2 hover:bg-token-surface-hover rounded-lg transition-all"
+    >
+      <Columns2Icon className="h-6 w-6 cursor-pointer" />
+    </button>
+
+    {/* Icons Only Show When Sidebar is Open */}
+    {sidebarOpen && (
+      <div className="flex items-center space-x-2">
+        <button className="h-10 px-3 hover:bg-token-surface-hover rounded-lg transition-all">
+          <SearchIcon className="h-6 w-6 cursor-pointer" />
+        </button>
+        <button className="h-10 px-3 hover:bg-token-surface-hover rounded-lg transition-all">
+          <PencilLine className="h-6 w-6 cursor-pointer" />
+        </button>
+      </div>
+    )}
+  </div>
+
+  {/* Sidebar Content */}
+  <div className="flex-1 overflow-y-auto p-4">
+    <div className="space-y-2">
+      {chatHistory.map((chat) => (
+        <button
+          key={chat.id}
+          className="w-full h-[3rem] flex items-center rounded-lg p-3 text-left hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+        >
+          {/* Icon Always Visible */}
+          <MessageSquareIcon className={`text-gray-500 h-5 w-5 shrink-0 `} />
+
+          {/* Text Appears Only When Sidebar is Open */}
+          <div className={`ml-3 transition-opacity ${sidebarOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+            <p className="text-sm font-medium text-gray-800">{chat.title}</p>
+            <p className="text-xs text-gray-500">{chat.date}</p>
+          </div>
+        </button>
+      ))}
+    </div>
+  </div>
+</aside>
+
+
+
       <main
         className={`relative flex bg-red ${
           isSubmitted
-            ? "justify-start min-h-[80vh]"
+            ? "justify-start min-h-[80vh] mt-20"
             : "justify-center min-h-screen"
-        } items-center h-full flex-col`}
+        } items-center h-full flex-col transition-all ${isSubmitted && sidebarOpen ? 'ml-72' : 'ml-20'}`}
       >
         {isSubmitted ? (
           <OllamaChat chatList={chat} isLoading={isLoading} />
@@ -397,7 +501,7 @@ export default function Home() {
       <form
         onSubmit={handleSubmit}
         ref={inputContainerRef}
-        className={` ${
+        className={`${
           isSubmitted ? "top-[90%]" : "top-[70%]"
         } -translate-y-1/2 p-3 absolute transition-all duration-300 m-auto -translate-x-1/2 left-1/2 flex flex-col border border-gray-300 dark:border-gray-900 shadow-lg rounded-lg bg-background max-w-screen-md w-full`}
       >
@@ -519,6 +623,7 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

@@ -35,7 +35,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`} // Changed overflow to auto for better scrolling behavior
       >
         {children}
-        <Toaster richColors position="top-right" /> {/* Optimized Toaster for better UX */}
+        <Toaster position="top-right" /> {/* Optimized Toaster for better UX */}
       </body>
     </html>
   );
