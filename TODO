@@ -11,9 +11,13 @@
 
 
 Sidebar for Recent Chats.
-Storage in IndexedDB.
+
+Tomorrow
+Storage in IndexedDB + unique id based chat route.
 Redux State Management.
 
+Offline Support.
+Voice Speech Option
 
 Tools
 
@@ -28,14 +32,3 @@ Tools
   b. Error/Bug Fix
   c. Unit Testing
 
-
-  useEffect(() => {
-  const handleResize = () => {
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
-  };
-
-  window.addEventListener("resize", handleResize);
-  return () => window.removeEventListener("resize", handleResize);
-}, []);

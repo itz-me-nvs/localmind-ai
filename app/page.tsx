@@ -101,7 +101,7 @@ export default function Home() {
   const MAX_TOKEN = 4000;
 
   useEffect(() => {
-    const localTheme = localStorage.getItem("theme") || "light";
+    const localTheme = localStorage.getItem("theme") || "dark";
     setTheme(localTheme);
     document.documentElement.classList.toggle("dark", localTheme === "dark");
 

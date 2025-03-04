@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { StoreProvider } from "./StoreProvider";
 
 // Load Geist Sans and Geist Mono fonts from Google Fonts
 const geistSans = Geist({
@@ -30,7 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <StoreProvider>
+ <html lang="en" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`} // Changed overflow to auto for better scrolling behavior
       >
@@ -38,5 +40,7 @@ export default function RootLayout({
         <Toaster position="top-right" /> {/* Optimized Toaster for better UX */}
       </body>
     </html>
+    </StoreProvider>
+
   );
 }
