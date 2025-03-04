@@ -16,7 +16,7 @@ const API_ERROR_CODE = {
 
 
     // custom error codes
-    "MODEL_NOT_FOUND": 1001
+    "MODEL_NOT_FOUND": 502
 }
 
 

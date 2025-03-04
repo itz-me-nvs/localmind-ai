@@ -20,14 +20,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { API_ERROR_CODE, OLLAMA_BASE_URL } from "@/lib/constants/common.constant";
+import {
+  API_ERROR_CODE,
+  OLLAMA_BASE_URL,
+} from "@/lib/constants/common.constant";
 import {
   ChatModel,
   OllamaAPIChatRequestModel,
   OllamaModelList,
 } from "@/lib/model/chatModel";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import {
   CheckCheckIcon,
   Columns2Icon,
@@ -39,7 +42,7 @@ import {
   SearchIcon,
   SparklesIcon,
   WrenchIcon,
-  XIcon
+  XIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -129,26 +132,23 @@ export default function Home() {
         }
       } catch (error: any) {
         const response = error?.response;
-        if(API_ERROR_CODE.INTERNAL_SERVER_ERROR === response?.status){
-          toast("Internal Server Error",{
+        if (API_ERROR_CODE.INTERNAL_SERVER_ERROR === response?.status) {
+          toast("Internal Server Error", {
             style: {
-              backgroundColor: 'hsl(var(--destructive))',
-              color: 'hsl(var(--destructive-foreground))'
-            }
-          })
-        }
-        else if(API_ERROR_CODE.SOMETHING_WENT_WRONG == response?.status){
+              backgroundColor: "hsl(var(--destructive))",
+              color: "hsl(var(--destructive-foreground))",
+            },
+          });
+        } else if (API_ERROR_CODE.SOMETHING_WENT_WRONG == response?.status) {
           // error style
           toast("Something went wrong", {
-
             style: {
-              backgroundColor: 'hsl(var(--destructive))',
-              color: 'hsl(var(--destructive-foreground))'
-            }
-          })
-        }
-        else if (API_ERROR_CODE.MODEL_NOT_FOUND == response?.status) {
-          redirect("/reload")
+              backgroundColor: "hsl(var(--destructive))",
+              color: "hsl(var(--destructive-foreground))",
+            },
+          });
+        } else if (API_ERROR_CODE.MODEL_NOT_FOUND == response?.status) {
+          redirect("/reload");
         }
       }
     };
@@ -220,57 +220,65 @@ export default function Home() {
   const summarizeChatHistory = async (
     maxSummaryToken: number = 1000
   ): Promise<string> => {
-    if (chat.length > 1) {
-      let content = chat
-        .slice(1, -MAX_MESSAGES)
-        .map((item: ChatModel) => `${item.role}: ${item.name}`)
-        .join(" ");
+    try {
+      if (chat.length > 1) {
+        let content = chat
+          .slice(1, -MAX_MESSAGES)
+          .map((item: ChatModel) => `${item.role}: ${item.name}`)
+          .join(" ");
 
-      const response = await axios.post(
-        "/api/ollama/generate",
-        {
-          model: selectedModel || "qwen2.5:0.5b",
-          prompt: `Summarize the following chat history: ${content}`,
-          stream: false,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
+        const response = await axios.post(
+          "/api/ollama/generate",
+          {
+            model: selectedModel || "qwen2.5:0.5b",
+            prompt: `Summarize the following chat history: ${content}`,
+            stream: false,
           },
-        }
-      );
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-      const fullSummary = response?.data?.response || "";
-      console.log(fullSummary);
+        const fullSummary = response?.data?.response || "";
+        console.log(fullSummary);
 
-      if (fullSummary.length <= maxSummaryToken) return fullSummary;
+        if (fullSummary.length <= maxSummaryToken) return fullSummary;
 
-      const summary = fullSummary.substring(0, maxSummaryToken);
+        const summary = fullSummary.substring(0, maxSummaryToken);
 
-      return `${summary}...`;
+        return `${summary}...`;
+      }
+
+      return "";
+    } catch (err) {
+      console.log("error", err);
+      const error = ((err as AxiosError).response?.data as any)?.error;
+      toast.error(error || "Something went wrong");
+      setIsLoading(false);
+      throw error;
     }
-
-    return "";
   };
 
   const ollamaChatCompletion = async () => {
+    let messages: OllamaAPIChatRequestModel[] = [];
+    let chatSummary = "";
+
+    chatSummary = await summarizeChatHistory();
+    messages = [
+      {
+        role: "system",
+        content: `Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information. ${chatSummary}`,
+      },
+      {
+        role: "user",
+        content: input,
+      },
+    ];
+    console.log(chatSummary);
+
     try {
-      let messages: OllamaAPIChatRequestModel[] = [];
-      let chatSummary = "";
-
-      chatSummary = await summarizeChatHistory();
-      messages = [
-        {
-          role: "system",
-          content: `Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information. ${chatSummary}`,
-        },
-        {
-          role: "user",
-          content: input,
-        },
-      ];
-      console.log(chatSummary);
-
       const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -329,13 +337,23 @@ export default function Home() {
               });
             }
           } catch (error) {
-            console.error("Error parsing JSON:", error);
+            toast.error("Error parsing JSON", {
+              style: {
+                backgroundColor: "hsl(var(--destructive))",
+                color: "hsl(var(--destructive-foreground))",
+              },
+            });
           }
         }
       }
     } catch (error) {
-      console.error("Streaming error:", error);
-      setIsLoading(false);
+      toast.error("Something went wrong", {
+        style: {
+          backgroundColor: "hsl(var(--destructive))",
+          color: "hsl(var(--destructive-foreground))",
+        },
+      });
+      throw error;
     }
   };
 
@@ -382,7 +400,7 @@ export default function Home() {
           />
         )} */}
 
-{/* <div
+        {/* <div
         className={`flex items-center justify-start transition-opacity duration-300 ease-in-out `}
       >
 
@@ -406,7 +424,10 @@ export default function Home() {
       </div> */}
 
         <div className="flex items-center space-x-3">
-          <Select onValueChange={(value) => handleModelChange(value)} defaultValue="qwen2.5:0.5b">
+          <Select
+            onValueChange={(value) => handleModelChange(value)}
+            defaultValue="qwen2.5:0.5b"
+          >
             <SelectTrigger className="w-[180px]  focus:ring-0 dark:border-background-message dark:border">
               <SelectValue placeholder="Models" />
             </SelectTrigger>
@@ -421,68 +442,75 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 h-full left-0 z-40 flex flex-col shadow-xl bg-sidebar-surface-primary transition-all duration-300 ease-in-out ${
+          sidebarOpen ? "w-72" : "w-20"
+        } overflow-hidden`}
+      >
+        {/* Top Section */}
+        <div className="flex h-16 items-center justify-between border-b px-4">
+          {/* Sidebar Toggle Button */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="h-10 px-2 hover:bg-token-surface-hover rounded-lg transition-all"
+          >
+            <Columns2Icon className="h-6 w-6 cursor-pointer" />
+          </button>
 
+          {/* Icons Only Show When Sidebar is Open */}
+          {sidebarOpen && (
+            <div className="flex items-center space-x-2">
+              <button className="h-10 px-3 hover:bg-token-surface-hover rounded-lg transition-all">
+                <SearchIcon className="h-6 w-6 cursor-pointer" />
+              </button>
+              <button className="h-10 px-3 hover:bg-token-surface-hover rounded-lg transition-all">
+                <PencilLine className="h-6 w-6 cursor-pointer" />
+              </button>
+            </div>
+          )}
+        </div>
 
+        {/* Sidebar Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-2">
+            {chatHistory.map((chat) => (
+              <button
+                key={chat.id}
+                className="w-full h-[3rem] flex items-center rounded-lg p-3 text-left hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+              >
+                {/* Icon Always Visible */}
+                <MessageSquareIcon
+                  className={`text-gray-500 h-5 w-5 shrink-0 `}
+                />
 
-       {/* Sidebar */}
-       <aside
-  className={`fixed inset-y-0 h-full left-0 z-40 flex flex-col shadow-xl bg-sidebar-surface-primary transition-all duration-300 ease-in-out ${
-    sidebarOpen ? "w-72" : "w-20"
-  } overflow-hidden`}
->
-  {/* Top Section */}
-  <div className="flex h-16 items-center justify-between border-b px-4">
-    {/* Sidebar Toggle Button */}
-    <button
-      onClick={() => setSidebarOpen(!sidebarOpen)}
-      className="h-10 px-2 hover:bg-token-surface-hover rounded-lg transition-all"
-    >
-      <Columns2Icon className="h-6 w-6 cursor-pointer" />
-    </button>
-
-    {/* Icons Only Show When Sidebar is Open */}
-    {sidebarOpen && (
-      <div className="flex items-center space-x-2">
-        <button className="h-10 px-3 hover:bg-token-surface-hover rounded-lg transition-all">
-          <SearchIcon className="h-6 w-6 cursor-pointer" />
-        </button>
-        <button className="h-10 px-3 hover:bg-token-surface-hover rounded-lg transition-all">
-          <PencilLine className="h-6 w-6 cursor-pointer" />
-        </button>
-      </div>
-    )}
-  </div>
-
-  {/* Sidebar Content */}
-  <div className="flex-1 overflow-y-auto p-4">
-    <div className="space-y-2">
-      {chatHistory.map((chat) => (
-        <button
-          key={chat.id}
-          className="w-full h-[3rem] flex items-center rounded-lg p-3 text-left hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
-        >
-          {/* Icon Always Visible */}
-          <MessageSquareIcon className={`text-gray-500 h-5 w-5 shrink-0 `} />
-
-          {/* Text Appears Only When Sidebar is Open */}
-          <div className={`ml-3 transition-opacity ${sidebarOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
-            <p className="text-sm font-medium text-gray-800">{chat.title}</p>
-            <p className="text-xs text-gray-500">{chat.date}</p>
+                {/* Text Appears Only When Sidebar is Open */}
+                <div
+                  className={`ml-3 transition-opacity ${
+                    sidebarOpen
+                      ? "opacity-100"
+                      : "opacity-0 w-0 overflow-hidden"
+                  }`}
+                >
+                  <p className="text-sm font-medium text-gray-800">
+                    {chat.title}
+                  </p>
+                  <p className="text-xs text-gray-500">{chat.date}</p>
+                </div>
+              </button>
+            ))}
           </div>
-        </button>
-      ))}
-    </div>
-  </div>
-</aside>
-
-
+        </div>
+      </aside>
 
       <main
         className={`relative flex bg-red ${
           isSubmitted
             ? "justify-start min-h-[80vh] mt-20"
             : "justify-center min-h-screen"
-        } items-center h-full flex-col transition-all ${isSubmitted && sidebarOpen ? 'ml-72' : 'ml-20'}`}
+        } items-center h-full flex-col transition-all ${
+          isSubmitted && sidebarOpen ? "ml-72" : "ml-20"
+        }`}
       >
         {isSubmitted ? (
           <OllamaChat chatList={chat} isLoading={isLoading} />
@@ -623,7 +651,6 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
