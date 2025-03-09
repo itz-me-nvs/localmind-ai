@@ -1,6 +1,6 @@
 export interface ChatModel {
     id: number;
-    name: string;
+    content: string;
     role: string;
     isError: boolean
 }

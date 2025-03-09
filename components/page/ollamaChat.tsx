@@ -41,7 +41,7 @@ export default function OllamaChat({
                 item.role === "user" ? "justify-end" : "justify-start mb-6"
               }`}
             >
-              {item.role == "Assistant" && (
+              {item.role == "assistant" && (
                 <div className="rounded-xl flex items-center justify-center w-9 h-9 flex-shrink-0">
                   <Image
                     src="/logo/logo.svg"
@@ -66,7 +66,7 @@ export default function OllamaChat({
                   <div className="flex items-center justify-between border-red-300 dark:border-red-900 bg-background-message border p-3 rounded-lg">
                     <div className="flex items-center">
                       <p className="text-red-500">
-                        {item.name} +{" "}
+                        {item.content} +{" "}
                         {
                           " If this issue persists please contact us through our help center at https://ollama.ai/help"
                         }
@@ -87,7 +87,7 @@ export default function OllamaChat({
                       pre: CodeBlock as any,
                     }}
                   >
-                    {item.name}
+                    {item.content}
                   </Markdown>
                 )}
               </div>

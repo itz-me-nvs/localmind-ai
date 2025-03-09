@@ -31,16 +31,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <StoreProvider>
- <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`} // Changed overflow to auto for better scrolling behavior
+        className={`${geistSans.variable} ${geistMono.variable}
+        antialiased overflow-hidden bg-background-secondary text-text-light dark:text-text-dark transition-colors duration-500`} // Changed overflow to auto for better scrolling behavior
       >
-        {children}
+        <StoreProvider>{children}</StoreProvider>
         <Toaster position="top-right" /> {/* Optimized Toaster for better UX */}
       </body>
     </html>
-    </StoreProvider>
-
   );
 }
