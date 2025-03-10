@@ -12,14 +12,10 @@
 
 Sidebar for Recent Chats.
 
-Tomorrow
 Storage in IndexedDB + unique id based chat route.
 Redux State Management.
 
-Offline Support.
-Voice Speech Option
-
-Tools
+Prompt Enhancer
 
 1. Academic
   a. translate
@@ -31,4 +27,13 @@ Tools
   a. Design UI
   b. Error/Bug Fix
   c. Unit Testing
+
+PWA Offline Support
+Project Landing Page.
+
+# Future
+Voice Speech Option
+Tools
+Search
+
 

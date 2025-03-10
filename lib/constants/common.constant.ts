@@ -19,8 +19,18 @@ const API_ERROR_CODE = {
     "MODEL_NOT_FOUND": 502
 }
 
+const FANCY_COLORS: string[] = [
+    '#FFD700',
+    '#FF6F00',
+    '#007FFF',
+    '#8000FF',
+    '#FF69B4',
+    '#FF0000',
+    '#FF89C5'
+]
+
 
 export {
-    API_ERROR_CODE, OLLAMA_BASE_URL
+    API_ERROR_CODE, FANCY_COLORS, OLLAMA_BASE_URL
 }
 
