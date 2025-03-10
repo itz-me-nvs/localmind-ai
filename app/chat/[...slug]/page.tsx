@@ -1,17 +1,8 @@
 "use client";
 
+import PromptEnhancerModal from "@/components/page/dialogs/promptModal";
+import ToolsModal from "@/components/page/dialogs/toolsModal";
 import OllamaChat from "@/components/page/ollamaChat";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   API_ERROR_CODE,
   OLLAMA_BASE_URL,
@@ -39,29 +29,25 @@ import { useAppDispatch, useAppSelector } from "@/lib/state/hooks";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios, { AxiosError } from "axios";
 import {
-  CheckCheckIcon,
   Columns2Icon,
-  CopyIcon,
   EarthIcon,
   MessageSquareIcon,
   MoonIcon,
   PencilLine,
   PlusIcon,
   SearchIcon,
-  SparklesIcon,
   SunIcon,
-  WrenchIcon,
-  XIcon
+  WrenchIcon
 } from "lucide-react";
 import Image from "next/image";
 import { redirect, useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import z from "zod";
 
-const FormScheme = z.object({
+export const FormScheme = z.object({
   prompt: z.string().min(1, {
     message: "Prompt is required",
   }),
@@ -82,6 +68,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [modelList, setModelList] = useState<OllamaModelList[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [promptModelOpen, setPromptModelOpen] = useState<boolean>(false);
+  const [toolModelOpen, setToolModelOpen] = useState<boolean>(false);
   const [promptEnhanceResult, setPromptEnhanceResult] = useState<string>("");
   const [error, setError] = useState<string>("");
 
@@ -616,7 +603,9 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
               <span className="text-gray-700 dark:text-gray-300">Prompt</span>
             </div>
 
-            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary">
+            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary opacity-70 pointer-events-none"
+            >
+              {/* onClick={() => setToolModelOpen(true)} */}
               <WrenchIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               <span className="text-gray-700 dark:text-gray-300">Tools</span>
             </div>
@@ -628,85 +617,14 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           </div>
         </div>
       </form>
+<FormProvider {...form}>
+<PromptEnhancerModal open={promptModelOpen} onOpenChange={setPromptModelOpen}
+     OnSubmitPromptEnhanceHandler={OnSubmitPromptEnhance} handleCopyPromptEnhance={handleCopyPromptEnhance}
+     promptCopyStatus={promptCopyStatus} promptEnhanceResult={promptEnhanceResult}
+     />
+</FormProvider>
 
-      <Dialog open={promptModelOpen} onOpenChange={setPromptModelOpen}>
-        <DialogContent className="max-w-[600px] max-h-[600px] h-auto overflow-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Prompt Enhancer{" "}
-              {/* <Badge className="ml-1" variant="secondary">
-                New
-              </Badge> */}
-            </DialogTitle>
-            <DialogDescription>
-              Make changes to your profile here. Click save when you're done.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(OnSubmitPromptEnhance)}
-                className="grid grid-cols-4 items-center gap-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="prompt"
-                  render={({ field }) => (
-                    <FormItem className="col-span-3">
-                      <Input
-                        className="focus-visible:ring-0"
-                        placeholder="Type your prompt here."
-                        {...field}
-                      />
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button
-                  type="submit"
-                  className="flex items-center bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <SparklesIcon className="h-5 w-5" />
-                  <span>Enhance</span>
-                </Button>
-              </form>
-            </Form>
-          </div>
-          <DialogFooter>
-            <div className="grid w-full gap-2 relative">
-              <Textarea
-                rows={1}
-                cols={1}
-                readOnly
-                value={promptEnhanceResult}
-                className="min-h-[80px] focus-visible:ring-0 pr-10"
-              />
-              {promptCopyStatus == "idle" && (
-                <CopyIcon
-                  className="h-5 w- absolute top-2 right-2 cursor-pointer"
-                  onClick={handleCopyPromptEnhance}
-                />
-              )}
-
-              {promptCopyStatus == "success" && (
-                <CheckCheckIcon
-                  className="h-5 w- absolute top-2 right-2"
-                  onClick={handleCopyPromptEnhance}
-                />
-              )}
-
-              {promptCopyStatus == "error" && (
-                <XIcon
-                  className="h-5 w- absolute top-2 right-2"
-                  onClick={handleCopyPromptEnhance}
-                />
-              )}
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+<ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen}/>
     </div>
   );
 }
