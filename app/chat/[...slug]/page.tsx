@@ -26,7 +26,6 @@ import {
 } from "@/lib/state/features/theme/themeSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/state/hooks";
 // import { addMessage, getMessages } from "@/lib/services/db/indexedDB";
-import { zodResolver } from "@hookform/resolvers/zod";
 import axios, { AxiosError } from "axios";
 import {
   Columns2Icon,
@@ -42,16 +41,9 @@ import {
 import Image from "next/image";
 import { redirect, useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import z from "zod";
 
-export const FormScheme = z.object({
-  prompt: z.string().min(1, {
-    message: "Prompt is required",
-  }),
-});
 
 export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [input, setInput] = useState("");
@@ -69,14 +61,10 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [promptModelOpen, setPromptModelOpen] = useState<boolean>(false);
   const [toolModelOpen, setToolModelOpen] = useState<boolean>(false);
-  const [promptEnhanceResult, setPromptEnhanceResult] = useState<string>("");
   const [error, setError] = useState<string>("");
 
   const inputContainerRef = useRef<HTMLFormElement>(null);
   const placeHolderRef = useRef<HTMLParagraphElement>(null);
-  const [promptCopyStatus, setPromptCopyStatus] = useState<
-    "idle" | "success" | "error"
-  >("idle");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatID, setChatID] = useState("");
 
@@ -92,13 +80,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     { id: 3, title: "Database Setup", date: "2 days ago" },
   ];
 
-  // Prompt Enhancer Formgroup
-  const form = useForm<z.infer<typeof FormScheme>>({
-    resolver: zodResolver(FormScheme),
-    defaultValues: {
-      prompt: "",
-    },
-  });
+
 
   const MAX_MESSAGES = 5;
   const MAX_TOKEN = 4000;
@@ -170,12 +152,12 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     getOllamaModels();
   }, []);
 
-  useEffect(() => {
-    if (promptModelOpen) {
-      form.reset(); // reset the form on intial render
-      setPromptEnhanceResult("");
-    }
-  }, [promptModelOpen]);
+  // useEffect(() => {
+  //   if (promptModelOpen) {
+  //     form.reset(); // reset the form on intial render
+  //     setPromptEnhanceResult("");
+  //   }
+  // }, [promptModelOpen]);
 
   const fetchMessages = async (chatId: string) => {
     let updatedChats: ChatModel[] = [{
@@ -416,34 +398,6 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     }
   };
 
-  async function OnSubmitPromptEnhance(data: z.infer<typeof FormScheme>) {
-    if (data.prompt) {
-      const response = await axios.post("/api/ollama/generate", {
-        model: selectedModel || "qwen2.5:0.5b",
-        prompt: `Improve the clarity, effectiveness, and engagement of the following prompt **without answering it**. Do not provide a response to the prompt itself; just refine its wording for better AI interaction:\n\n"${data.prompt}"`,
-        stream: false,
-      });
-
-      const enhancedPrompt = response?.data?.response || "";
-      setPromptEnhanceResult(enhancedPrompt);
-
-      console.log("response", enhancedPrompt);
-    }
-  }
-
-  const handleCopyPromptEnhance = async () => {
-    try {
-      await navigator.clipboard.writeText(promptEnhanceResult);
-      setPromptCopyStatus("success");
-      setTimeout(() => {
-        setPromptCopyStatus("idle");
-      }, 1000);
-    } catch (error) {
-      setPromptCopyStatus("error");
-      console.error("Failed to copy text:", error);
-    }
-  };
-
   const togglePageTheme = () => {
     dispatch(toggleTheme(theme));
   };
@@ -617,12 +571,8 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           </div>
         </div>
       </form>
-<FormProvider {...form}>
 <PromptEnhancerModal open={promptModelOpen} onOpenChange={setPromptModelOpen}
-     OnSubmitPromptEnhanceHandler={OnSubmitPromptEnhance} handleCopyPromptEnhance={handleCopyPromptEnhance}
-     promptCopyStatus={promptCopyStatus} promptEnhanceResult={promptEnhanceResult}
      />
-</FormProvider>
 
 <ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen}/>
     </div>

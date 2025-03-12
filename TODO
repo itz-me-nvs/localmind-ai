@@ -6,22 +6,23 @@
   b. Prompt Enhancer.✅
   c. Tool Section.
   d. React Form hook.✅
-5. Performance & Error handling
-6. Testing (Performance Metrics).
+Storage in IndexedDB + unique id based chat route. ✅
+Redux State Management.✅
 
 
+# thing to do
 Sidebar for Recent Chats.
 
-Storage in IndexedDB + unique id based chat route.
-Redux State Management.
 
-Prompt Enhancer
+Prompt Enhancer:-
 
 1. Academic
   a. translate
   b. Rewrite
   c. Elaborate/Short
   d. Bullet Points
+
+TOOLS:-
 
 2. Coding
   a. Design UI
@@ -30,6 +31,12 @@ Prompt Enhancer
 
 PWA Offline Support
 Project Landing Page.
+
+
+# Performance & Security
+
+Performance & Error handling
+Testing (Performance Metrics).
 
 # Future
 Voice Speech Option
