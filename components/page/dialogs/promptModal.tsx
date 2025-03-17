@@ -25,13 +25,12 @@ import {
   CheckCheckIcon,
   CopyIcon,
   FileIcon,
-  PaintbrushIcon,
   PencilIcon,
   ShieldCheckIcon,
   SparklesIcon,
-  XIcon,
+  XIcon
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
@@ -45,6 +44,7 @@ const promptEnhanceScheme = z.object({
   prompt: z.string().min(1, {
     message: "Prompt is required",
   }),
+  context: z.string().optional(),
 });
 
 const rewriteScheme = z.object({
@@ -57,52 +57,73 @@ const rewriteScheme = z.object({
   contentLength: z.string().min(1, {
     message: "Content Length is required",
   }),
+  context: z.string().optional(),
+});
+
+const summarizeScheme = z.object({
+  message: z.string().min(1, {
+    message: "Message is required",
+  }),
+  length: z.string().min(1, {
+    message: "Length is required",
+  }),
+  style: z.string().min(1, {
+    message: "Summarization Style is required",
+  }),
+  emphasis: z.string().min(1, {
+    message: "Emphasis is required",
+  }),
+  context: z.string().optional(),
 });
 
 export default function PromptEnhancerModal({
   open,
   onOpenChange,
 }: PromptEnhancerModalProps) {
-
-
   const toolList = [
     {
       id: 0,
       title: "Prompt Enhancer",
-      description: "Enhance your prompts and rewrite content with AI assistance",
+      description:
+        "Enhance your prompts and rewrite content with AI assistance",
       icon: SparklesIcon,
     },
     {
       id: 1,
       title: "Rewrite sentence",
-      description: "Enhance your prompts and rewrite content with AI assistance",
+      description:
+        "Enhance your prompts and rewrite content with AI assistance",
 
       icon: PencilIcon,
     },
     {
       id: 2,
       title: "Summarize",
-      description: "Enhance your prompts and rewrite content with AI assistance",
+      description:
+        "Enhance your prompts and rewrite content with AI assistance",
       icon: FileIcon,
     },
     {
       id: 3,
       title: "Bug Fix",
-      description: "Enhance your prompts and rewrite content with AI assistance",
+      description:
+        "Enhance your prompts and rewrite content with AI assistance",
       icon: BugIcon,
     },
     {
       id: 4,
       title: "Refactor Code",
-      description: "Enhance your prompts and rewrite content with AI assistance",
+      description:
+        "Enhance your prompts and rewrite content with AI assistance",
       icon: ShieldCheckIcon,
     },
-    {
-      id: 5,
-      title: "Design UI",
-      description: "Enhance your prompts and rewrite content with AI assistance",
-      icon: PaintbrushIcon,
-    },
+    // {
+    //   id: 5,
+    //   title: "Design UI",
+    //   description:
+    //     "Enhance your prompts and rewrite content with AI assistance",
+    //   icon: PaintbrushIcon,
+    // },
   ];
 
   const toneOptions = [
@@ -121,10 +142,59 @@ export default function PromptEnhancerModal({
     { id: 5, name: "Very Long" },
   ];
 
+  // Summarization lists
+
+  const summaryLengths = [
+    { label: "Short", value: "short", description: "1-2 sentences" },
+    { label: "Medium", value: "medium", description: "1-2 paragraphs" },
+    { label: "Long", value: "long", description: "Detailed but concise" },
+  ];
+
+  const summarizationStyles = [
+    {
+      label: "Key Points",
+      value: "key_points",
+      description: "Summarized as bullet points",
+    },
+    {
+      label: "Concise",
+      value: "concise",
+      description: "Compact paragraph format",
+    },
+    {
+      label: "Detailed",
+      value: "detailed",
+      description: "Structured summary with key details",
+    },
+  ];
+
+  const contextEmphasis = [
+    {
+      label: "General Summary",
+      value: "general",
+      description: "Covers the main ideas broadly",
+    },
+    {
+      label: "Actionable Steps",
+      value: "actionable",
+      description: "Focuses on steps or instructions",
+    },
+    {
+      label: "Technical Details",
+      value: "technical",
+      description: "Highlights technical concepts",
+    },
+    {
+      label: "Emotional Tone",
+      value: "emotional",
+      description: "Preserves the sentiment and tone",
+    },
+  ];
+
   const [toolType, setToolType] = useState<number>(0);
   const [ToolItem, setToolItem] = useState(toolList[0]);
   const [context, setContext] = useState("");
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [promptCopyStatus, setPromptCopyStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
@@ -136,6 +206,7 @@ export default function PromptEnhancerModal({
     resolver: zodResolver(promptEnhanceScheme),
     defaultValues: {
       prompt: "",
+      context: "",
     },
     mode: "onChange", // Add this to enable validation as user types
   });
@@ -146,17 +217,41 @@ export default function PromptEnhancerModal({
       message: "",
       tone: "1",
       contentLength: "1",
+      context: "",
     },
     mode: "onChange", // Add this to enable validation as user types
   });
+
+  const summarizeForm = useForm<z.infer<typeof summarizeScheme>>({
+    resolver: zodResolver(summarizeScheme),
+    defaultValues: {
+      message: "",
+      style: "key_points",
+      emphasis: "general",
+      context: "",
+      length: "short",
+    },
+    mode: "onChange", // Add this to enable validation as user types
+  });
+
+  useEffect(() => {
+    if (open) {
+      promptEnhancerForm.reset();
+      rewriteForm.reset();
+      summarizeForm.reset();
+      setToolType(0);
+      setPromptEnhanceResult("");
+    }
+  }, [open]);
 
   // Reset forms when tool type changes
   const handleToolTypeChange = (newToolType: number) => {
     setToolType(newToolType);
     setPromptEnhanceResult("");
 
-    const selectedTool = toolList.find(t => t.id === newToolType) || toolList[0];
-    setToolItem(selectedTool)
+    const selectedTool =
+      toolList.find((t) => t.id === newToolType) || toolList[0];
+    setToolItem(selectedTool);
 
     // Only reset the forms when switching between them
     if (newToolType === 0) {
@@ -171,7 +266,8 @@ export default function PromptEnhancerModal({
   ) {
     if (data.prompt) {
       try {
-        setIsLoading(true)
+        setIsLoading(true);
+        setPromptEnhanceResult("");
         const response = await axios.post("/api/ollama/generate", {
           model: "qwen2.5:0.5b",
           prompt: `Improve the clarity, effectiveness, and engagement of the following prompt **without answering it**. Do not provide a response to the prompt itself; just refine its wording for better AI interaction:\n\n"${data.prompt}"`,
@@ -179,37 +275,83 @@ export default function PromptEnhancerModal({
         });
         const enhancedPrompt = response?.data?.response || "";
         setPromptEnhanceResult(enhancedPrompt);
-        setIsLoading(false)
+        setIsLoading(false);
 
         console.log("response", enhancedPrompt);
       } catch (error) {
-        setIsLoading(false)
-        throw error
+        setIsLoading(false);
+        throw error;
       }
     }
   }
 
   async function OnSubmitRewriteEnhance(data: z.infer<typeof rewriteScheme>) {
     try {
-      setIsLoading(true)
-    const selectedTone = toneOptions.find(t => t.id.toString() == data.tone)?.name;
-    const selectedLength = lengthLabels.find(t => t.id.toString() == data.contentLength)?.name;
+      setIsLoading(true);
+      setPromptEnhanceResult("");
 
-    // Implementation for rewrite enhancement
-    const response = await axios.post("/api/ollama/generate", {
-      model: "llama3.2:latest", // qwen2.5:0.5b
-      prompt: `You are a text rewriting assistant. Rewrite the following content with a ${selectedTone} tone and make it ${selectedLength} in length.
+      const selectedTone = toneOptions.find(
+        (t) => t.id.toString() == data.tone
+      )?.name;
+      const selectedLength = lengthLabels.find(
+        (t) => t.id.toString() == data.contentLength
+      )?.name;
+
+      console.log("data", data);
+
+      // Implementation for rewrite enhancement
+      const response = await axios.post("/api/ollama/generate", {
+        model: "llama3.2:latest", // qwen2.5:0.5b
+        prompt: `You are a text rewriting assistant. Rewrite the following content with a ${selectedTone} tone and make it ${selectedLength} in length.
       Important: Only provide the rewritten text. Do not include any explanations,
       Original Text: "${data.message}",
-      ${context ? `\nAdditional context: ${context}` : ""}`,
-      stream: false,
-    });
-    const enhancedContent = response?.data?.response || "";
-    setPromptEnhanceResult(enhancedContent);
-    setIsLoading(false)
+      ${data.context ? `\nAdditional context: ${data.context}` : ""}`,
+        stream: false,
+      });
+      const enhancedContent = response?.data?.response || "";
+      setPromptEnhanceResult(enhancedContent);
+      setIsLoading(false);
     } catch (error) {
-      setIsLoading(false)
-      throw error
+      setIsLoading(false);
+      throw error;
+    }
+  }
+
+  async function OnSubmitSummarizeEnhance(
+    data: z.infer<typeof summarizeScheme>
+  ) {
+    try {
+      setIsLoading(true);
+      setPromptEnhanceResult("");
+
+      const summaryLength = summaryLengths.find(
+        (t) => t.value === data.length
+      )?.description;
+      const summaryStyle = summarizationStyles.find(
+        (t) => t.value == data.style
+      )?.description;
+
+      const summaryEmphasis = contextEmphasis.find(
+        (t) => t.value == data.emphasis
+      )?.description;
+
+      console.log("data", data);
+
+      // Implementation for rewrite enhancement
+      const response = await axios.post("/api/ollama/generate", {
+        model: "llama3.2:latest", // qwen2.5:0.5b
+        prompt: `Summarize the following text based on the given parameters, Summary Length: ${summaryLength}, Summary Style: ${summaryStyle}, Emphasis: ${summaryEmphasis}.
+      Important: Only provide the summary. Do not include any explanations,
+      Original Text: "${data.message}",
+      ${data.context ? `\nAdditional context: ${data.context}` : ""}`,
+        stream: false,
+      });
+      const enhancedContent = response?.data?.response || "";
+      setPromptEnhanceResult(enhancedContent);
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
     }
   }
 
@@ -230,19 +372,17 @@ export default function PromptEnhancerModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[800px] w-full max-h-[800px] h-auto overflow-auto">
         <DialogHeader>
-          <DialogTitle>
-            {ToolItem.title}
-          </DialogTitle>
-          <DialogDescription>
-            {ToolItem.description}
-          </DialogDescription>
+          <DialogTitle>{ToolItem.title}</DialogTitle>
+          <DialogDescription>{ToolItem.description}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-4 gap-4 py-4 h-full">
           <div className="col-span-3 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md">
             {toolType === 0 && (
               <Form {...promptEnhancerForm}>
                 <form
-                  onSubmit={promptEnhancerForm.handleSubmit(OnSubmitPromptEnhance)}
+                  onSubmit={promptEnhancerForm.handleSubmit(
+                    OnSubmitPromptEnhance
+                  )}
                 >
                   <FormField
                     control={promptEnhancerForm.control}
@@ -258,21 +398,33 @@ export default function PromptEnhancerModal({
                       </FormItem>
                     )}
                   />
-                  <Textarea
-                    placeholder="Add context for better output (optional)"
-                    value={context}
-                    onChange={(e) => setContext(e.target.value)}
-                    className="mt-4 w-full grid"
+                  <FormField
+                    control={promptEnhancerForm.control}
+                    name="context"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Textarea
+                          placeholder="Add context for better output (optional)"
+                          className="mt-4 w-full grid"
+                          {...field}
+                        />
+                      </FormItem>
+                    )}
                   />
-                  <Button disabled={isLoading} type="submit" className="flex items-center w-full mt-4">
-                    {
-                      isLoading ? <BounceLoader /> : <div className="flex items-center">
+
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="flex items-center w-full mt-4"
+                  >
+                    {isLoading ? (
+                      <BounceLoader />
+                    ) : (
+                      <div className="flex items-center">
                         <SparklesIcon className="h-5 w-5 mr-2" />
-                        <span>
-                        Enhance
-                        </span>
+                        <span>Enhance</span>
                       </div>
-                    }
+                    )}
                   </Button>
                 </form>
               </Form>
@@ -280,7 +432,9 @@ export default function PromptEnhancerModal({
 
             {toolType === 1 && (
               <Form {...rewriteForm}>
-                <form onSubmit={rewriteForm.handleSubmit(OnSubmitRewriteEnhance)}>
+                <form
+                  onSubmit={rewriteForm.handleSubmit(OnSubmitRewriteEnhance)}
+                >
                   <FormField
                     control={rewriteForm.control}
                     name="message"
@@ -301,7 +455,9 @@ export default function PromptEnhancerModal({
                       name="tone"
                       render={({ field }) => (
                         <FormItem>
-                          <label className="block text-sm font-medium">Tone</label>
+                          <label className="block text-sm font-medium">
+                            Tone
+                          </label>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -311,7 +467,10 @@ export default function PromptEnhancerModal({
                             </SelectTrigger>
                             <SelectContent>
                               {toneOptions.map((option) => (
-                                <SelectItem key={option.id} value={option.id.toString()}>
+                                <SelectItem
+                                  key={option.id}
+                                  value={option.id.toString()}
+                                >
                                   {option.name}
                                 </SelectItem>
                               ))}
@@ -326,7 +485,9 @@ export default function PromptEnhancerModal({
                       name="contentLength"
                       render={({ field }) => (
                         <FormItem>
-                          <label className="block text-sm font-medium">Length</label>
+                          <label className="block text-sm font-medium">
+                            Length
+                          </label>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -336,7 +497,10 @@ export default function PromptEnhancerModal({
                             </SelectTrigger>
                             <SelectContent>
                               {lengthLabels.map((option) => (
-                                <SelectItem key={option.id} value={option.id.toString()}>
+                                <SelectItem
+                                  key={option.id}
+                                  value={option.id.toString()}
+                                >
                                   {option.name}
                                 </SelectItem>
                               ))}
@@ -347,21 +511,186 @@ export default function PromptEnhancerModal({
                       )}
                     />
                   </div>
-                  <Textarea
-                    placeholder="Add context for better output (optional)"
-                    value={context}
-                    onChange={(e) => setContext(e.target.value)}
-                    className="mt-4"
+
+                  <FormField
+                    control={rewriteForm.control}
+                    name="context"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Textarea
+                          placeholder="Add context for better output (optional)"
+                          className="mt-4"
+                          {...field}
+                        />
+                      </FormItem>
+                    )}
                   />
-                  <Button disabled={isLoading} type="submit" className="flex items-center w-full mt-4">
-                    {
-                      isLoading ? <BounceLoader /> : <div className="flex items-center">
+
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="flex items-center w-full mt-4"
+                  >
+                    {isLoading ? (
+                      <BounceLoader />
+                    ) : (
+                      <div className="flex items-center">
                         <PencilIcon className="h-5 w-5 mr-2" />
-                        <span>
-                        Enhance Content
-                        </span>
+                        <span>Enhance Content</span>
                       </div>
-                    }
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            )}
+
+            {toolType === 2 && (
+              <Form {...summarizeForm}>
+                <form
+                  onSubmit={summarizeForm.handleSubmit(
+                    OnSubmitSummarizeEnhance
+                  )}
+                >
+                  <FormField
+                    control={summarizeForm.control}
+                    name="message"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Input
+                          className="focus-visible:ring-0 w-full"
+                          placeholder="Type your content here..."
+                          {...field}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4 items-center mt-4">
+
+                  <FormField
+                      control={summarizeForm.control}
+                      name="length"
+                      render={({ field }) => (
+                        <FormItem >
+                          <label className="block text-sm font-medium">
+                            Style
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select length" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {summaryLengths.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={summarizeForm.control}
+                      name="style"
+                      render={({ field }) => (
+                        <FormItem>
+                          <label className="block text-sm font-medium">
+                            Style
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a style" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {summarizationStyles.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                  </div>
+
+                  <FormField
+                      control={summarizeForm.control}
+                      name="emphasis"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <label className="block text-sm font-medium">
+                            Emphasis
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select emphasis" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {contextEmphasis.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label} ({option.description})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                  <FormField
+                    control={summarizeForm.control}
+                    name="context"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <Textarea
+                          placeholder="Add context for better output (optional)"
+                          className="mt-4"
+                          {...field}
+                        />
+                      </FormItem>
+                    )}
+                  />
+
+
+
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="flex items-center w-full mt-4"
+                  >
+                    {isLoading ? (
+                      <BounceLoader />
+                    ) : (
+                      <div className="flex items-center">
+                        <PencilIcon className="h-5 w-5 mr-2" />
+                        <span>Enhance Content</span>
+                      </div>
+                    )}
                   </Button>
                 </form>
               </Form>

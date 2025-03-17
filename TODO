@@ -33,10 +33,13 @@ PWA Offline Support
 Project Landing Page.
 
 
+Common Security & Backend Setups
+
+
 # Performance & Security
 
 Performance & Error handling
-Testing (Performance Metrics).
+Testing (Performance Metrics) + Sentry.io.
 
 # Future
 Voice Speech Option
