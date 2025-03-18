@@ -1,3 +1,4 @@
+import CodeBlock from "@/components/ai/codeBlock";
 import { BounceLoader } from "@/components/ui/bounceLoader";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,13 +26,16 @@ import {
   CheckCheckIcon,
   CopyIcon,
   FileIcon,
+  LanguagesIcon,
   PencilIcon,
-  ShieldCheckIcon,
   SparklesIcon,
   XIcon
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
+import remarkGfm from "remark-gfm";
 import z from "zod";
 
 type PromptEnhancerModalProps = {
@@ -76,6 +80,19 @@ const summarizeScheme = z.object({
   context: z.string().optional(),
 });
 
+const bugFixScheme = z.object({
+  code: z.string().min(1, {
+    message: "",
+  }),
+  detection: z.string().min(1, {
+    message: "Bug Detection is required",
+  }),
+  analysis: z.string().min(1, {
+    message: "Bug Analysis is required",
+  }),
+  context: z.string().optional(),
+});
+
 export default function PromptEnhancerModal({
   open,
   onOpenChange,
@@ -112,10 +129,10 @@ export default function PromptEnhancerModal({
     },
     {
       id: 4,
-      title: "Refactor Code",
+      title: "Translation",
       description:
-        "Enhance your prompts and rewrite content with AI assistance",
-      icon: ShieldCheckIcon,
+        "Translate your prompts and rewrite content with AI assistance",
+      icon: LanguagesIcon,
     },
     // {
     //   id: 5,
@@ -191,6 +208,59 @@ export default function PromptEnhancerModal({
     },
   ];
 
+  // refactor code
+
+  const aiBugDetectionOptions = [
+    {
+      label: "Auto-Detect Issues",
+      value: "auto_detect",
+      description: "Let AI find the most probable bugs",
+    },
+    {
+      label: "Syntax & Typo Check",
+      value: "syntax_typo",
+      description: "AI scans for syntax errors and missing characters",
+    },
+    {
+      label: "Undefined Variables",
+      value: "undefined_vars",
+      description: "Detect variables that are not declared or assigned",
+    },
+    {
+      label: "Memory Leaks & Performance",
+      value: "memory_performance",
+      description: "AI checks for memory leaks and inefficiencies",
+    },
+    {
+      label: "Security Vulnerabilities",
+      value: "security_scan",
+      description: "Find potential security issues in code",
+    },
+  ];
+
+  const aiCodeAnalysis = [
+    {
+      label: "Fix Issue",
+      value: "fix_suggestions",
+      description: "AI generates potential solutions",
+    },
+    {
+      label: "Explain the Issue",
+      value: "explain_issue",
+      description: "AI provides a beginner-friendly explanation of the bug",
+    },
+    {
+      label: "Compare with Best Practices",
+      value: "best_practices",
+      description: "Check how similar issues are solved in best practices",
+    },
+    {
+      label: "Provide Code Snippet Fix",
+      value: "code_snippet_fix",
+      description: "AI generates an improved version of the buggy code",
+    },
+  ];
+
   const [toolType, setToolType] = useState<number>(0);
   const [ToolItem, setToolItem] = useState(toolList[0]);
   const [context, setContext] = useState("");
@@ -199,6 +269,8 @@ export default function PromptEnhancerModal({
     "idle" | "success" | "error"
   >("idle");
   const [promptEnhanceResult, setPromptEnhanceResult] = useState<string>("");
+  const [markdown, setMarkdown] = useState<string>("");
+
   const COLOR_CODE = FANCY_COLORS;
 
   // Create separate form instances with unique IDs to prevent field interference
@@ -230,6 +302,17 @@ export default function PromptEnhancerModal({
       emphasis: "general",
       context: "",
       length: "short",
+    },
+    mode: "onChange", // Add this to enable validation as user types
+  });
+
+  const bugFixForm = useForm<z.infer<typeof bugFixScheme>>({
+    resolver: zodResolver(bugFixScheme),
+    defaultValues: {
+      code: "",
+      analysis: "fix_suggestions",
+      detection: "auto_detect",
+      context: "",
     },
     mode: "onChange", // Add this to enable validation as user types
   });
@@ -355,6 +438,45 @@ export default function PromptEnhancerModal({
     }
   }
 
+  async function OnSubmitBugFix(data: z.infer<typeof bugFixScheme>) {
+    try {
+      setIsLoading(true);
+      setPromptEnhanceResult("");
+
+      const detection = aiBugDetectionOptions.find(
+        (t) => t.value === data.detection
+      )?.description;
+      const codeAnalysis = aiCodeAnalysis.find(
+        (t) => t.value == data.analysis
+      )?.description;
+
+      // Implementation for rewrite enhancement
+      const response = await axios.post("/api/ollama/generate", {
+        model: "llama3.2:latest", // qwen2.5:0.5b
+        prompt: `Analyze and fix the following code snippet or issue based on the selected debugging parameters
+         Bug Detection option selected: ${detection}
+         Bug Analysis option selected: ${codeAnalysis}
+         Original Code: "${data.code}",
+         ${data.context ? `\nAdditional context: ${data.context}` : ""}
+         Instructions:-
+    - Identify the bug(s) in the provided code.
+    - Provide a **concise explanation** of the issues.
+    - Offer an **optimized and corrected version** of the code.
+    - Ensure best practices are followed.
+
+    Important: **Only provide the bug analysis and fixed code. Do not include any extra commentary.**
+        `,
+        stream: false,
+      });
+      const enhancedContent = response?.data?.response || "";
+      setPromptEnhanceResult(enhancedContent);
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
+    }
+  }
+
   const handleCopyPromptEnhance = async () => {
     try {
       await navigator.clipboard.writeText(promptEnhanceResult);
@@ -368,6 +490,10 @@ export default function PromptEnhancerModal({
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMarkdown(e.target.value);
+    // onCodeChange(e.target.value);
+  };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[800px] w-full max-h-[800px] h-auto overflow-auto">
@@ -376,7 +502,7 @@ export default function PromptEnhancerModal({
           <DialogDescription>{ToolItem.description}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-4 gap-4 py-4 h-full">
-          <div className="col-span-3 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md">
+          <div className="col-span-3 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md max-h-[600px] overflow-auto">
             {toolType === 0 && (
               <Form {...promptEnhancerForm}>
                 <form
@@ -566,12 +692,11 @@ export default function PromptEnhancerModal({
                     )}
                   />
                   <div className="grid grid-cols-2 gap-4 items-center mt-4">
-
-                  <FormField
+                    <FormField
                       control={summarizeForm.control}
                       name="length"
                       render={({ field }) => (
-                        <FormItem >
+                        <FormItem>
                           <label className="block text-sm font-medium">
                             Style
                           </label>
@@ -628,39 +753,38 @@ export default function PromptEnhancerModal({
                         </FormItem>
                       )}
                     />
-
                   </div>
 
                   <FormField
-                      control={summarizeForm.control}
-                      name="emphasis"
-                      render={({ field }) => (
-                        <FormItem className="mt-4">
-                          <label className="block text-sm font-medium">
-                            Emphasis
-                          </label>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select emphasis" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {contextEmphasis.map((option) => (
-                                <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label} ({option.description})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    control={summarizeForm.control}
+                    name="emphasis"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <label className="block text-sm font-medium">
+                          Emphasis
+                        </label>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select emphasis" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {contextEmphasis.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label} ({option.description})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={summarizeForm.control}
@@ -676,7 +800,146 @@ export default function PromptEnhancerModal({
                     )}
                   />
 
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="flex items-center w-full mt-4"
+                  >
+                    {isLoading ? (
+                      <BounceLoader />
+                    ) : (
+                      <div className="flex items-center">
+                        <PencilIcon className="h-5 w-5 mr-2" />
+                        <span>Enhance Content</span>
+                      </div>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            )}
 
+            {toolType === 3 && (
+              <Form {...bugFixForm}>
+                <form onSubmit={bugFixForm.handleSubmit(OnSubmitBugFix)}>
+                  <FormField
+                    control={bugFixForm.control}
+                    name="code"
+                    render={({ field, formState, fieldState }) => (
+                      <FormItem>
+                        {/* <Input
+                          className="focus-visible:ring-0 w-full"
+                          placeholder="Type your content here..."
+                          {...field}
+                        /> */}
+
+                        <textarea
+                          className="w-full h-32 p-2 bg-gray-800 text-white border border-gray-700 rounded-md"
+                          placeholder="Paste your code here using Markdown format..."
+                          value={markdown}
+                          onChange={handleInputChange}
+                          // {...field}
+                        />
+
+                        <div>
+                          <h2 className="text-lg font-semibold mb-2">
+                            Preview
+                          </h2>
+                          <div className="border border-gray-300 rounded p-4 h-64 overflow-x-auto text-sm">
+                          <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                    components={{
+                      code: CodeBlock as any,
+                      pre: CodeBlock as any,
+                    }}
+                  >
+                    {markdown}
+                  </ReactMarkdown>
+                          </div>
+                        </div>
+
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+<FormField
+                      control={bugFixForm.control}
+                      name="detection"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <label className="block text-sm font-medium">
+                            Bug Type
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select bug type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {aiBugDetectionOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label} ({option.description})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+
+                    <FormField
+                      control={bugFixForm.control}
+                      name="analysis"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <label className="block text-sm font-medium">
+                            Code Analysis
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a style" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {aiCodeAnalysis.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label} ({option.description})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+
+                  <FormField
+                    control={bugFixForm.control}
+                    name="context"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <Textarea
+                          placeholder="Add context for better output (optional)"
+                          className="mt-4"
+                          {...field}
+                        />
+                      </FormItem>
+                    )}
+                  />
 
                   <Button
                     disabled={isLoading}

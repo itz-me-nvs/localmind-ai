@@ -79,7 +79,7 @@ export default function OllamaChat({
                     </Button>
                   </div>
                 ) : (
-                  <Markdown
+                    <Markdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight]}
                     components={{
