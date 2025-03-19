@@ -1,6 +1,5 @@
 "use client";
 
-import PromptEnhancerModal from "@/components/page/dialogs/promptModal";
 import ToolsModal from "@/components/page/dialogs/toolsModal";
 import OllamaChat from "@/components/page/ollamaChat";
 import {
@@ -549,17 +548,9 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
         <div className="flex justify-between items-center mt-3 px-2">
           <div className="flex items-center gap-3">
-            <div
-              className="flex items-center gap-2 relative py-2 px-3 rounded-lg cursor-pointer bg-gray-200 dark:bg-background-secondary"
-              onClick={() => setPromptModelOpen(true)}
+            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary"
+              onClick={() => setToolModelOpen(true)}
             >
-              <PlusIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              <span className="text-gray-700 dark:text-gray-300">Prompt</span>
-            </div>
-
-            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary opacity-70 pointer-events-none"
-            >
-              {/* onClick={() => setToolModelOpen(true)} */}
               <WrenchIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               <span className="text-gray-700 dark:text-gray-300">Tools</span>
             </div>
@@ -571,10 +562,8 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           </div>
         </div>
       </form>
-<PromptEnhancerModal open={promptModelOpen} onOpenChange={setPromptModelOpen}
+<ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen}
      />
-
-<ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen}/>
     </div>
   );
 }
