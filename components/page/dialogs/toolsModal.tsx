@@ -32,15 +32,18 @@ import {
 import axios from "axios";
 import { CommandList } from "cmdk";
 import {
+  BotIcon,
+  BrainIcon,
   BrushIcon,
   BugIcon,
   CheckCheckIcon,
+  CogIcon,
   CopyIcon,
   FileIcon,
   LanguagesIcon,
   PencilIcon,
   SparklesIcon,
-  XIcon,
+  XIcon
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -98,6 +101,15 @@ const bugFixScheme = z.object({
   analysis: z.string().min(1, {
     message: "Bug Analysis is required",
   }),
+});
+
+const langTranslateScheme = z.object({
+  code: z.string().min(1, {
+    message: "",
+  }),
+  targetLanguage: z.string().min(1, {
+    message: "Target Language is required",
+  }),
   context: z.string().optional(),
 });
 
@@ -123,23 +135,20 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     {
       id: 1,
       title: "Rewrite sentence",
-      description:
-        "Enhance your prompts and rewrite content with AI assistance",
-
+      description: "Rewrite your sentences with AI assistance",
       icon: PencilIcon,
     },
     {
       id: 2,
       title: "Summarize",
-      description:
-        "Enhance your prompts and rewrite content with AI assistance",
+      description: "Summarize your content with different style and emphasis",
       icon: FileIcon,
     },
     {
       id: 3,
       title: "Bug Fix",
       description:
-        "Enhance your prompts and rewrite content with AI assistance",
+        "Efficiently fix bugs in your code and provide suggestions for improvement",
       icon: BugIcon,
     },
     {
@@ -153,8 +162,31 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       id: 5,
       title: "Design UI",
       description:
-        "Enhance your prompts and rewrite content with AI assistance",
+        "Design a user interface for your web application, mobile app, or website",
       icon: BrushIcon,
+    },
+    {
+      id: 6,
+      title: "Unit Testing",
+      description:
+        "Effiently write unit tests for your code, don't need manual testing",
+      icon: CogIcon,
+    },
+    {
+      id: 7,
+      title: "Project Memorization",
+      description:
+        "To supercharge your coding speed, dive deep into your project's codebase and surroundings!",
+      icon: BrainIcon,
+    },
+
+    {
+      id: 8,
+      title: "Coding Assistant",
+      description:
+        "Transform your project with the help of our AI coding assistant, making it easier and more efficient.",
+      icon: BotIcon,
+      disable: true,
     },
   ];
 
@@ -329,6 +361,26 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     },
   ];
 
+  // Language Translation
+  const targetLanguages = [
+    {
+      label: "Javascript",
+      id: 0,
+    },
+    {
+      label: "Python",
+      id: 1,
+    },
+    {
+      label: "React",
+      id: 3,
+    },
+    {
+      label: "Angular",
+      id: 4,
+    },
+  ];
+
   const [toolType, setToolType] = useState<number>(0);
   const [ToolItem, setToolItem] = useState(toolList[0]);
   const [context, setContext] = useState("");
@@ -384,6 +436,15 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       code: "",
       analysis: "fix_suggestions",
       detection: "auto_detect",
+    },
+    mode: "onChange", // Add this to enable validation as user types
+  });
+
+  const langTranslationForm = useForm<z.infer<typeof langTranslateScheme>>({
+    resolver: zodResolver(langTranslateScheme),
+    defaultValues: {
+      code: "",
+      targetLanguage: "0",
       context: "",
     },
     mode: "onChange", // Add this to enable validation as user types
@@ -399,11 +460,14 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     mode: "onChange", // Add this to enable validation as user types
   });
 
+  // reset tools on load
   useEffect(() => {
     if (open) {
       promptEnhancerForm.reset();
       rewriteForm.reset();
       summarizeForm.reset();
+      bugFixForm.reset();
+      langTranslationForm.reset();
       setToolType(0);
       setPromptEnhanceResult("");
     }
@@ -466,7 +530,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
 
       // Implementation for rewrite enhancement
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3:latest", // qwen2.5:0.5b
+        model: "llama3.2:latest", // qwen2.5:0.5b
         prompt: `You are a text rewriting assistant. Rewrite the following content with a ${selectedTone} tone and make it ${selectedLength} in length.
       Important: Only provide the rewritten text. Do not include any explanations,
       Original Text: "${data.message}",
@@ -547,12 +611,10 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     ${data.code}
     \`\`\`
     
-    ${data.context ? `\n**Additional Context:** ${data.context}` : ""}  
-
     **Important:** The AI **must prioritize** syntax issues first before addressing logic errors. If any issue found then return only the corrected code in the same format. Do **NOT** add unnecessary text or explanations beyond the required details. if not bug found then response only like this "No Bug Found"`;
       // Enhanced Bug Fixing Prompt
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3:latest", // or any preferred model
+        model: "llama3.2:latest", // or any preferred model
         prompt: bugFixPrompt.trim(),
         stream: false,
       });
@@ -599,6 +661,43 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     } catch (error) {
       setIsLoading(false);
       throw error;
+    }
+  }
+
+  async function OnSubmitLangTranslation(
+    data: z.infer<typeof langTranslateScheme>
+  ) {
+    try {
+      setIsLoading(true);
+      setPromptEnhanceResult("");
+
+      const sourceLang = "Javascript";
+      const targetLang = targetLanguages.find(
+        (t) => t.id == Number(data.targetLanguage)
+      )?.label;
+
+      const translationPrompt = `Translate the follow code from Javascript to ${targetLang}. Ensure accuracy and best practices.
+       Important: Only return the translated code, no extra comments. If user input is not valid then return the response "Invalid Input".
+
+        Original Code: \`\`\`${sourceLang}
+  ${data.code}
+  \`\`\`
+
+   If applicable, replace libraries or functions with equivalent ones in ${targetLang}.
+      `;
+
+      // Enhanced translation prompt
+      const response = await axios.post("/api/ollama/generate", {
+        model: "llama3.2:latest", // or any preferred model
+        prompt: translationPrompt.trim(),
+        stream: false,
+      });
+
+      const enhancedContent = response?.data?.response || "";
+      setPromptEnhanceResult(enhancedContent);
+      setIsLoading(false);
+    } catch (error) {
+      console.log("err", error);
     }
   }
 
@@ -989,11 +1088,46 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                           placeholder="Write your code here..."
                           {...field}
                         />
+                        <CodeBlock
+                          language="javascript"
+                          placeholder="Write your code here..."
+                          {...field}
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
+                  <FormField
+                    control={bugFixForm.control}
+                    name="detection"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <label className="block text-sm font-medium">
+                          Bug Type
+                        </label>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select bug type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {aiBugDetectionOptions.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label} ({option.description})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={bugFixForm.control}
                     name="detection"
@@ -1056,8 +1190,79 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                     )}
                   />
 
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="flex items-center w-full mt-4"
+                  >
+                    {isLoading ? (
+                      <BounceLoader />
+                    ) : (
+                      <div className="flex items-center">
+                        <PencilIcon className="h-5 w-5 mr-2" />
+                        <span>Enhance Content</span>
+                      </div>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            )}
+
+            {toolType === 4 && (
+              <Form {...langTranslationForm}>
+                <form
+                  onSubmit={langTranslationForm.handleSubmit(
+                    OnSubmitLangTranslation
+                  )}
+                >
                   <FormField
-                    control={bugFixForm.control}
+                    control={langTranslationForm.control}
+                    name="code"
+                    render={({ field, formState, fieldState }) => (
+                      <FormItem>
+                        <CodeBlock
+                          language="javascript"
+                          placeholder="Write your code here..."
+                          {...field}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={langTranslationForm.control}
+                    name="targetLanguage"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <label className="block text-sm font-medium">
+                          Target Language
+                        </label>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {targetLanguages.map((option) => (
+                              <SelectItem
+                                key={option.id}
+                                value={option.id.toString()}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={langTranslationForm.control}
                     name="context"
                     render={({ field }) => (
                       <FormItem className="col-span-2">
@@ -1069,7 +1274,6 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                       </FormItem>
                     )}
                   />
-
                   <Button
                     disabled={isLoading}
                     type="submit"
@@ -1213,12 +1417,21 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
 
             {promptEnhanceResult !== "" && (
               <div className="grid w-full gap-2 relative mt-4">
-                <Textarea
-                  rows={1}
-                  readOnly
-                  value={promptEnhanceResult}
-                  className="min-h-[300px] focus-visible:ring-0 pr-10"
-                />
+                {toolType !== 4 ? (
+                  <Textarea
+                    rows={1}
+                    readOnly
+                    value={promptEnhanceResult}
+                    className="min-h-[120px] focus-visible:ring-0 pr-10"
+                  />
+                ) : (
+                  <CodeBlock
+                    language="javascript"
+                    placeholder="Write your code here..."
+                    defaultCode={promptEnhanceResult}
+                    readOnly={true}
+                  />
+                )}
                 {promptCopyStatus === "idle" && (
                   <CopyIcon
                     className="h-5 w-5 absolute top-2 right-2 cursor-pointer"
@@ -1246,7 +1459,9 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                     toolType === tool.id
                       ? "bg-gray-200 dark:bg-gray-700"
                       : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                  } p-2 rounded-md cursor-pointer`}
+                  } p-2 rounded-md cursor-pointer ${
+                    tool.disable ? "opacity-40 pointer-events-none" : ""
+                  }`}
                 >
                   <tool.icon
                     className="h-5 w-5 mr-2"

@@ -13,6 +13,8 @@ Redux State Management.✅
 # thing to do
 Sidebar for Recent Chats.
 
+# Fussy Search on Recent chats
+
 
 Prompt Enhancer:-
 
@@ -28,11 +30,9 @@ TOOLS:-
   a. Design UI
   b. Error/Bug Fix
   c. Unit Testing
+  d. Project memorization
 
-PWA Offline Support
-Project Landing Page.
-
-
+Common Design Standards
 Common Security & Backend Setups
 
 
@@ -40,8 +40,11 @@ Common Security & Backend Setups
 
 Performance & Error handling
 Testing (Performance Metrics) + Sentry.io.
+Project Landing Page.
 
 # Future
+
+PWA Offline Support
 Voice Speech Option
 Tools
 Search

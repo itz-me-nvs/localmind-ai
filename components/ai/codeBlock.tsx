@@ -4,9 +4,9 @@ import "@uiw/react-textarea-code-editor/dist.css";
 
 const CodeEditor = dynamic(()=> import("@uiw/react-textarea-code-editor").then(mod => mod.default), {ssr: false});
 
-export default function CodeBlock({language, placeholder, readOnly = false, ...props}: {language?: string, placeholder?: string, readOnly?: boolean}) {
+export default function CodeBlock({defaultCode, language, placeholder, readOnly = false, ...props}: {defaultCode?: string, language?: string, placeholder?: string, readOnly?: boolean}) {
   const [code, setCode] = React.useState(
-    `function add(a, b) {\n  return a + b;\n}`
+    `${defaultCode}`
   );
     return (
      <div className="w-full max-h-[400px] overflow-auto">
@@ -16,7 +16,7 @@ export default function CodeBlock({language, placeholder, readOnly = false, ...p
       data-color-mode="dark"
       readOnly={readOnly}
       placeholder={placeholder || 'Write your code here...'}
-      onChange={(evn) => setCode(evn.target.value)}
+      onChange={(evn) => !readOnly && setCode(evn.target.value)}
       padding={15}
       style={{
         fontSize: 12,
