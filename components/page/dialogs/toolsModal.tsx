@@ -1,6 +1,7 @@
 import CodeBlock from "@/components/ai/codeBlock";
 import { BounceLoader } from "@/components/ui/bounceLoader";
 import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -19,8 +22,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FANCY_COLORS } from "@/lib/constants/common.constant";
+import { ToolDropdownType } from "@/lib/model/toolsModel";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@radix-ui/react-popover";
 import axios from "axios";
+import { CommandList } from "cmdk";
 import {
   BrushIcon,
   BugIcon,
@@ -30,13 +40,10 @@ import {
   LanguagesIcon,
   PencilIcon,
   SparklesIcon,
-  XIcon
+  XIcon,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import ReactMarkdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
-import remarkGfm from "remark-gfm";
 import z from "zod";
 
 type ToolsModalProps = {
@@ -94,10 +101,17 @@ const bugFixScheme = z.object({
   context: z.string().optional(),
 });
 
-export default function ToolsModal({
-  open,
-  onOpenChange,
-}: ToolsModalProps) {
+const designUIScheme = z.object({
+  prompt: z.string().min(1, {
+    message: "Prompt is required",
+  }),
+  framework: z.string().min(1, {
+    message: "Framework is required",
+  }),
+  context: z.string().optional(),
+});
+
+export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   const toolList = [
     {
       id: 0,
@@ -262,6 +276,59 @@ export default function ToolsModal({
     },
   ];
 
+  // Design UI
+
+  const styleFramework = [
+    {
+      id: 0,
+      label: "CSS",
+    },
+    {
+      id: 1,
+      label: "Tailwind",
+    },
+
+    {
+      id: 2,
+      label: "Bootstrap",
+    },
+  ];
+
+  const UIComponentList = [
+    {
+      id: 0,
+      label: "Button",
+    },
+    {
+      id: 1,
+      label: "Input",
+    },
+    {
+      id: 2,
+      label: "Textarea",
+    },
+    {
+      id: 3,
+      label: "Select",
+    },
+    {
+      id: 4,
+      label: "Radio",
+    },
+    {
+      id: 5,
+      label: "Checkbox",
+    },
+    {
+      id: 6,
+      label: "Switch",
+    },
+    {
+      id: 7,
+      label: "Slider",
+    },
+  ];
+
   const [toolType, setToolType] = useState<number>(0);
   const [ToolItem, setToolItem] = useState(toolList[0]);
   const [context, setContext] = useState("");
@@ -271,6 +338,10 @@ export default function ToolsModal({
   >("idle");
   const [promptEnhanceResult, setPromptEnhanceResult] = useState<string>("");
   const [markdown, setMarkdown] = useState<string>("");
+  const [IsComponentMention, setIsComponentMention] = useState<boolean>(false);
+  const [filteredComponents, setFilteredComponents] = useState<
+    ToolDropdownType[]
+  >([]);
 
   const COLOR_CODE = FANCY_COLORS;
 
@@ -313,6 +384,16 @@ export default function ToolsModal({
       code: "",
       analysis: "fix_suggestions",
       detection: "auto_detect",
+      context: "",
+    },
+    mode: "onChange", // Add this to enable validation as user types
+  });
+
+  const designUIForm = useForm<z.infer<typeof designUIScheme>>({
+    resolver: zodResolver(designUIScheme),
+    defaultValues: {
+      prompt: "",
+      framework: "",
       context: "",
     },
     mode: "onChange", // Add this to enable validation as user types
@@ -468,13 +549,49 @@ export default function ToolsModal({
     
     ${data.context ? `\n**Additional Context:** ${data.context}` : ""}  
 
-    **Important:** The AI **must prioritize** syntax issues first before addressing logic errors. If any issue found then return only the corrected code in the same format. Do **NOT** add unnecessary text or explanations beyond the required details. if not bug found then response only like this "No Bug Found"`
-    // Enhanced Bug Fixing Prompt
-const response = await axios.post("/api/ollama/generate", {
-  model: "llama3:latest", // or any preferred model
-  prompt: bugFixPrompt.trim(),
-  stream: false,
-});
+    **Important:** The AI **must prioritize** syntax issues first before addressing logic errors. If any issue found then return only the corrected code in the same format. Do **NOT** add unnecessary text or explanations beyond the required details. if not bug found then response only like this "No Bug Found"`;
+      // Enhanced Bug Fixing Prompt
+      const response = await axios.post("/api/ollama/generate", {
+        model: "llama3:latest", // or any preferred model
+        prompt: bugFixPrompt.trim(),
+        stream: false,
+      });
+
+      const enhancedContent = response?.data?.response || "";
+      setPromptEnhanceResult(enhancedContent);
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
+    }
+  }
+
+  async function OnSubmitDesignUI(data: z.infer<typeof designUIScheme>) {
+    try {
+      setIsLoading(true);
+      setPromptEnhanceResult("");
+
+      const framework = styleFramework.find(s => s.id == Number(data.framework))?.label;
+
+      const designUIPrompt = `Create a fully responsive UI component based on the following requirements:
+      **Description**: ${data.prompt}
+      **Framework**: ${framework}
+       **Design Considerations**:
+       - Ensure responsiveness on different screen sizes
+       - Use a consistent color scheme
+       - Proper spacing, padding, and alignment
+  - Maintain accessibility (ARIA attributes if needed)
+
+   **Output Format**:
+  - Only return the generated ${data.framework} code inside code blocks
+  - No extra comments or explanations
+      `;
+      // Enhanced Bug Fixing Prompt
+      const response = await axios.post("/api/ollama/generate", {
+        model: "llama3:latest", // or any preferred model
+        prompt: designUIPrompt.trim(),
+        stream: false,
+      });
 
       const enhancedContent = response?.data?.response || "";
       setPromptEnhanceResult(enhancedContent);
@@ -498,19 +615,52 @@ const response = await axios.post("/api/ollama/generate", {
     }
   };
 
+  const handleDesignUiInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value;
+
+    designUIForm.setValue("prompt", value);
+    console.log("value", value);
+    
+
+    // check if value match with @
+    const match = value.match(/@(\w*)$/);
+    console.log(match);
+
+    if (match) {
+      setIsComponentMention(true);
+      setFilteredComponents(
+        UIComponentList.filter((c) =>
+          c.label.toLowerCase().includes(match[1].toLowerCase())
+        ) ?? []
+      );
+    } else {
+      setIsComponentMention(false);
+    }
+  };
+
+  const handleComponentSelect = (item: ToolDropdownType) => {
+    const replacedPrompt = designUIForm.getValues().prompt.replace(/@\w*$/, item.label);
+    console.log("replacedPrompt", replacedPrompt);
+        
+    designUIForm.setValue("prompt", replacedPrompt);
+    setIsComponentMention(false);
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMarkdown(e.target.value);
     // onCodeChange(e.target.value);
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[800px] w-full max-h-[800px] h-auto overflow-auto">
+      <DialogContent className="min-w-[70vw] max-h-[90vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>{ToolItem.title}</DialogTitle>
           <DialogDescription>{ToolItem.description}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-4 gap-4 py-4 h-full">
-          <div className="col-span-3 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md max-h-[600px] overflow-auto">
+          <div className="col-span-3 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md h-full overflow-auto">
             {toolType === 0 && (
               <Form {...promptEnhancerForm}>
                 <form
@@ -834,75 +984,77 @@ const response = await axios.post("/api/ollama/generate", {
                     name="code"
                     render={({ field, formState, fieldState }) => (
                       <FormItem>
-                       <CodeBlock language="javascript" placeholder="Write your code here..." {...field} />
+                        <CodeBlock
+                          language="javascript"
+                          placeholder="Write your code here..."
+                          {...field}
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-<FormField
-                      control={bugFixForm.control}
-                      name="detection"
-                      render={({ field }) => (
-                        <FormItem className="mt-4">
-                          <label className="block text-sm font-medium">
-                            Bug Type
-                          </label>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select bug type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {aiBugDetectionOptions.map((option) => (
-                                <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label} ({option.description})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField
+                    control={bugFixForm.control}
+                    name="detection"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <label className="block text-sm font-medium">
+                          Bug Type
+                        </label>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select bug type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {aiBugDetectionOptions.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label} ({option.description})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-
-                    <FormField
-                      control={bugFixForm.control}
-                      name="analysis"
-                      render={({ field }) => (
-                        <FormItem className="mt-4">
-                          <label className="block text-sm font-medium">
-                            Code Analysis
-                          </label>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choose a style" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {aiCodeAnalysis.map((option) => (
-                                <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label} ({option.description})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
+                  <FormField
+                    control={bugFixForm.control}
+                    name="analysis"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <label className="block text-sm font-medium">
+                          Code Analysis
+                        </label>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {aiCodeAnalysis.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label} ({option.description})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={bugFixForm.control}
@@ -936,13 +1088,136 @@ const response = await axios.post("/api/ollama/generate", {
               </Form>
             )}
 
+            {toolType === 5 && (
+              <Form {...designUIForm}>
+                <form onSubmit={designUIForm.handleSubmit(OnSubmitDesignUI)}>
+                  <FormField
+                    control={designUIForm.control}
+                    name="prompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Popover
+                          open={IsComponentMention}
+                        >
+                          <PopoverTrigger asChild>
+                            <div>
+                              <Input
+                                placeholder="Describe about your design here.."
+                                onChange={handleDesignUiInputChange}
+                                value={field.value}
+                              />
+                              <Label className="text-xs text-gray-400 dark:text-gray-600">
+                                Type @component to list all UI components
+                                available
+                              </Label>
+                            </div>
+                          </PopoverTrigger>
+
+                          {IsComponentMention && (
+                            <PopoverContent className="w-80 mt-[-30px]">
+                              <Command className="rounded-lg border shadow-md md:min-w-[300px] -z-10">
+                              <CommandInput placeholder="Type a command or search..." />
+                                <ScrollArea className="h-52 rounded-md border">
+                                <CommandList>
+                                <CommandEmpty>No results found.</CommandEmpty>
+                                <CommandGroup>
+                                  {
+                                    filteredComponents.length > 0 ? (
+                                      filteredComponents.map(c => <CommandItem
+                                        key={c.id}
+                                        onSelect={()=> handleComponentSelect(c)}
+                                      >
+                                        {c.label}
+                                      </CommandItem>)
+                                    ) : (
+                                      <div className="p-2 text-sm text-gray-500">No results found</div>
+                                    )
+                                  }
+
+                                </CommandGroup>
+                                </CommandList>
+                                </ScrollArea>
+                              </Command>
+                            </PopoverContent>
+                          )}
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={designUIForm.control}
+                    name="framework"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <label className="block text-sm font-medium">
+                          Style Framework
+                        </label>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {styleFramework.map((option) => (
+                              <SelectItem
+                                key={option.id}
+                                value={option.id.toString()}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={designUIForm.control}
+                    name="context"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <Textarea
+                          placeholder="Add context for better output (optional)"
+                          className="mt-4"
+                          {...field}
+                        />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="flex items-center w-full mt-4"
+                  >
+                    {isLoading ? (
+                      <BounceLoader />
+                    ) : (
+                      <div className="flex items-center">
+                        <PencilIcon className="h-5 w-5 mr-2" />
+                        <span>
+                          Design UI
+                        </span>
+                      </div>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            )}
+
             {promptEnhanceResult !== "" && (
               <div className="grid w-full gap-2 relative mt-4">
                 <Textarea
                   rows={1}
                   readOnly
                   value={promptEnhanceResult}
-                  className="min-h-[120px] focus-visible:ring-0 pr-10"
+                  className="min-h-[300px] focus-visible:ring-0 pr-10"
                 />
                 {promptCopyStatus === "idle" && (
                   <CopyIcon

@@ -15,3 +15,9 @@ export type PromptEnhanceFormType = {
     prompt: string,
     result: string
 }
+
+export type ToolDropdownType = {
+    id: number,
+    label: string,
+    description?: string
+}

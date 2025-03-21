@@ -31,9 +31,7 @@ import {
   EarthIcon,
   MessageSquareIcon,
   MoonIcon,
-  PencilLine,
-  PlusIcon,
-  SearchIcon,
+  PencilLine, SearchIcon,
   SunIcon,
   WrenchIcon
 } from "lucide-react";
