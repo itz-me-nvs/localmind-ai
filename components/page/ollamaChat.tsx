@@ -1,4 +1,4 @@
-import CodeBlock from "@/components/ai/codeBlock";
+
 import { Button } from "@/components/ui/button";
 import { ChatModel } from "@/lib/model/chatModel";
 import "highlight.js/styles/github-dark.css"; // Choose a highlight theme
@@ -8,6 +8,7 @@ import { useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
+import { CodeBlock } from "../ai/codeBlock";
 
 export default function OllamaChat({
   chatList,
@@ -89,6 +90,8 @@ export default function OllamaChat({
                   >
                     {item.content}
                   </Markdown>
+
+                  
                 )}
               </div>
             </div>

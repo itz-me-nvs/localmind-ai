@@ -1,13 +1,11 @@
-import CodeBlock from "@/components/ai/codeBlock";
+import CodeBlockEditor from "@/components/ai/codeBlockEditor";
+import { Badge } from "@/components/ui/badge";
 import { BounceLoader } from "@/components/ui/bounceLoader";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import {
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+  DialogContent
 } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -123,6 +121,16 @@ const designUIScheme = z.object({
   context: z.string().optional(),
 });
 
+const unitTestScheme = z.object({
+  code: z.string().min(1, {
+    message: "",
+  }),
+  targetFrameWork: z.string().min(1, {
+    message: "Target framework is required",
+  }),
+  context: z.string().optional(),
+});
+
 export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   const toolList = [
     {
@@ -178,6 +186,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       description:
         "To supercharge your coding speed, dive deep into your project's codebase and surroundings!",
       icon: BrainIcon,
+      isNewFeature: true
     },
 
     {
@@ -187,6 +196,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
         "Transform your project with the help of our AI coding assistant, making it easier and more efficient.",
       icon: BotIcon,
       disable: true,
+      
     },
   ];
 
@@ -317,7 +327,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     },
     {
       id: 1,
-      label: "Tailwind",
+      label: "Tailwind CSS",
     },
 
     {
@@ -379,6 +389,18 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       label: "Angular",
       id: 4,
     },
+  ];
+
+  // Unit testing
+  const targetUnitFrameworks = [
+    {
+      label: "Mocha",
+      id: 0,
+    },
+    {
+      label: "Jest",
+      id: 1,
+    }
   ];
 
   const [toolType, setToolType] = useState<number>(0);
@@ -454,8 +476,18 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     resolver: zodResolver(designUIScheme),
     defaultValues: {
       prompt: "",
-      framework: "",
+      framework: "0",
       context: "",
+    },
+    mode: "onChange", // Add this to enable validation as user types
+  });
+
+  const unitTestForm = useForm<z.infer<typeof unitTestScheme>>({
+    resolver: zodResolver(unitTestScheme),
+    defaultValues: {
+      code: "",
+      context: "",
+      targetFrameWork: "0"
     },
     mode: "onChange", // Add this to enable validation as user types
   });
@@ -645,12 +677,14 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   - Maintain accessibility (ARIA attributes if needed)
 
    **Output Format**:
-  - Only return the generated ${data.framework} code inside code blocks
+  - Only return the generated ${data.framework} code
+  - Just stick to the UI design, no extra framework code needed!
+  - Create design code that's super intuitive and user-friendly!
   - No extra comments or explanations
       `;
       // Enhanced Bug Fixing Prompt
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3:latest", // or any preferred model
+        model: "llama3.2:latest", // or any preferred model
         prompt: designUIPrompt.trim(),
         stream: false,
       });
@@ -684,6 +718,52 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   \`\`\`
 
    If applicable, replace libraries or functions with equivalent ones in ${targetLang}.
+      `;
+
+      // Enhanced translation prompt
+      const response = await axios.post("/api/ollama/generate", {
+        model: "llama3.2:latest", // or any preferred model
+        prompt: translationPrompt.trim(),
+        stream: false,
+      });
+
+      const enhancedContent = response?.data?.response || "";
+      setPromptEnhanceResult(enhancedContent);
+      setIsLoading(false);
+    } catch (error) {
+      console.log("err", error);
+    }
+  }
+
+
+  async function OnSubmitUnitTest(
+    data: z.infer<typeof unitTestScheme>
+  ) {
+    try {
+      setIsLoading(true);
+      setPromptEnhanceResult("");
+
+      const sourceLang = "Javascript";
+      const targetFrameWork = targetUnitFrameworks.find(
+        (t) => t.id == Number(data.targetFrameWork)
+      )?.label;
+
+      const translationPrompt = `Generate unit tests for the following function using ${targetFrameWork}
+       **Function:**
+  \`\`\`
+  ${data.code}
+  \`\`\`
+
+    **Requirements:**
+  - Use ${targetFrameWork} as the testing framework.
+  - Cover edge cases, including invalid inputs.
+  - Mock any external dependencies.
+  - Ensure correct assertions are used.
+
+   Output:
+  - Well-structured test cases following best practices.
+  - Short explanation for each test case.
+  - Ensure test functions are isolated and independent.
       `;
 
       // Enhanced translation prompt
@@ -753,13 +833,26 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="min-w-[70vw] max-h-[90vh] overflow-auto">
-        <DialogHeader>
+      <DialogContent className="min-w-[95%] h-[95%] overflow-hidden">
+        {/* <DialogHeader>
           <DialogTitle>{ToolItem.title}</DialogTitle>
           <DialogDescription>{ToolItem.description}</DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-4 gap-4 py-4 h-full">
-          <div className="col-span-3 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md h-full overflow-auto">
+        </DialogHeader> */}
+
+       
+<div className="flex flex-col">
+         <div>
+         <h2 className="font-bold text-lg">
+          {ToolItem.title}
+          </h2>
+          <p className="text-sm text-gray-500">
+          {ToolItem.description}
+          </p>
+         </div>
+         <div className="grid grid-cols-4 gap-4 py-4 h-full my-10">
+          
+          <div className="col-span-3 bg-white dark:bg-gray-900 p-2 rounded-lg">
+
             {toolType === 0 && (
               <Form {...promptEnhancerForm}>
                 <form
@@ -1083,12 +1176,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                     name="code"
                     render={({ field, formState, fieldState }) => (
                       <FormItem>
-                        <CodeBlock
-                          language="javascript"
-                          placeholder="Write your code here..."
-                          {...field}
-                        />
-                        <CodeBlock
+                        <CodeBlockEditor
                           language="javascript"
                           placeholder="Write your code here..."
                           {...field}
@@ -1220,7 +1308,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                     name="code"
                     render={({ field, formState, fieldState }) => (
                       <FormItem>
-                        <CodeBlock
+                        <CodeBlockEditor
                           language="javascript"
                           placeholder="Write your code here..."
                           {...field}
@@ -1415,21 +1503,92 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
               </Form>
             )}
 
+{toolType === 6 && (
+              <Form {...unitTestForm}>
+                <form onSubmit={unitTestForm.handleSubmit(OnSubmitUnitTest)}>
+                  <FormField
+                    control={unitTestForm.control}
+                    name="code"
+                    render={({ field }) => (
+                      <FormItem>
+                      <CodeBlockEditor
+                        language="javascript"
+                        placeholder="Write your code here..."
+                        {...field}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={unitTestForm.control}
+                    name="targetFrameWork"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <label className="block text-sm font-medium">
+                          Testing Framework
+                        </label>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {targetUnitFrameworks.map((option) => (
+                              <SelectItem
+                                key={option.id}
+                                value={option.id.toString()}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                 
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="flex items-center w-full mt-4"
+                  >
+                    {isLoading ? (
+                      <BounceLoader />
+                    ) : (
+                      <div className="flex items-center">
+                        <PencilIcon className="h-5 w-5 mr-2" />
+                        <span>
+                         Generate Unit Test
+                        </span>
+                      </div>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            )}
+
             {promptEnhanceResult !== "" && (
               <div className="grid w-full gap-2 relative mt-4">
-                {toolType !== 4 ? (
+                {toolType !== 4 && toolType !== 6 ? (
                   <Textarea
                     rows={1}
                     readOnly
                     value={promptEnhanceResult}
-                    className="min-h-[120px] focus-visible:ring-0 pr-10"
+                    className="min-h-[300px] focus-visible:ring-0 pr-10"
                   />
                 ) : (
-                  <CodeBlock
+                  <CodeBlockEditor
                     language="javascript"
                     placeholder="Write your code here..."
                     defaultCode={promptEnhanceResult}
                     readOnly={true}
+                    isInput={false}
                   />
                 )}
                 {promptCopyStatus === "idle" && (
@@ -1448,7 +1607,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
             )}
           </div>
 
-          <div className="col-span-1">
+          <div className="col-span-1 border-l border-gray-200 px-2">
             <h3 className="text-lg font-semibold mb-4">⚙️ Tools List</h3>
             <ul className="space-y-2 text-sm">
               {toolList.map((tool, index) => (
@@ -1469,12 +1628,19 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                   />
                   <span className="font-medium text-ellipsis overflow-hidden whitespace-nowrap">
                     {tool.title}
+                    {
+                      tool.isNewFeature && <Badge variant={"secondary"} className="ml-2 pb-1 px-3 text-xs rounded-2xl">New</Badge>
+                    }
                   </span>
                 </li>
               ))}
             </ul>
           </div>
         </div>
+
+        </div>
+
+      
       </DialogContent>
     </Dialog>
   );
