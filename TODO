@@ -12,8 +12,11 @@ Redux State Management.✅
 
 # thing to do
 Sidebar for Recent Chats.
-
-# Fussy Search on Recent chats
+Chat UI Issue fixes
+Fussy Search on Recent chats
+Performance & Error handling
+Testing (Performance Metrics) + Sentry.io.
+Project Landing Page.
 
 
 Prompt Enhancer:-
@@ -35,12 +38,6 @@ TOOLS:-
 Common Design Standards
 Common Security & Backend Setups
 
-
-# Performance & Security
-
-Performance & Error handling
-Testing (Performance Metrics) + Sentry.io.
-Project Landing Page.
 
 # Future
 
