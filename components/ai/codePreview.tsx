@@ -1,4 +1,6 @@
+import axios from "axios";
 import React from "react";
+import { BounceLoader } from "../ui/bounceLoader";
 
 interface CodePreviewProps {
     code: string;
@@ -6,9 +8,9 @@ interface CodePreviewProps {
 
 const CodePreview: React.FC<CodePreviewProps> = ({ code }) => {
     const iframeRef = React.useRef<HTMLIFrameElement>(null);
-    //<!DOCTYPE html><html><body><h1>Heading 1</h1></body></html>
     const [srcDoc, setSrcDoc] = React.useState("");
     const [isPreviewAvailable, setIsPreviewAvailable] = React.useState(true);
+    const [isFormating, setIsFormating] = React.useState(false);
 
     const extractHTML = (code: string) => {
       // Remove the backticks and the language specifier
@@ -26,13 +28,14 @@ const CodePreview: React.FC<CodePreviewProps> = ({ code }) => {
                 document.open();
 
                 let html = extractHTML(code);
+                
                 if (html) {
                     setSrcDoc(html);
                     setIsPreviewAvailable(true);
                 }
                 else {
                     setIsPreviewAvailable(false);
-                    setSrcDoc(code);
+                    fetchFormatedCode()
                 }
 
                 // close the document
@@ -48,20 +51,49 @@ const CodePreview: React.FC<CodePreviewProps> = ({ code }) => {
         };
     }, [code]);
 
+
+    const fetchFormatedCode = async () => {
+        try {
+            setIsFormating(true);
+            const prompt = `generate complete html code for the following code.
+  Important: Only return the formatted code, no explanations, no comments, no descriptions.
+  ${code}`;
+            const response = await axios.post("/api/ollama/generate", {
+                model: "llama3:latest",
+                prompt: prompt,
+                stream: false,
+            });
+            const formattedCode = response?.data?.response || "";
+            setIsFormating(false);
+      
+            let html = extractHTML(code);
+            if(html){
+                setSrcDoc(formattedCode);
+                setIsPreviewAvailable(true)
+            }
+            else {
+                setIsPreviewAvailable(false)
+            }
+
+        } catch (error) {
+            setIsFormating(false);
+            throw error;
+        }
+    };
     return (
        <>
        {
            isPreviewAvailable ? (
-               <iframe
+               <div className="flex justify-center h-full border p-2 rounded-lg">
+                <iframe
                    ref={iframeRef}
                    title="Code Preview"
                    srcDoc={srcDoc}
                    className="w-full h-full"
                />
+               </div>
            ) : (
-               <pre className="w-full h-full p-4 overflow-auto text-sm text-gray-500 bg-gray-900 rounded-lg">
-                   {code}
-               </pre>
+            isFormating ? <BounceLoader /> :  <div className="text-center flex items-center justify-center h-full bg-red-50 text-gray-500 dark:text-gray-400">Preview not available</div>
            )
        }
        </>

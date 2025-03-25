@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { FANCY_COLORS } from "@/lib/constants/common.constant";
 import { ToolDropdownType } from "@/lib/model/toolsModel";
@@ -30,7 +31,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@radix-ui/react-popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import axios from "axios";
 import { CommandList } from "cmdk";
 import {
@@ -692,30 +692,31 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
 
       const framework = styleFramework.find(s => s.id == Number(data.framework))?.label;
 
-      const designUIPrompt = `Create a fully responsive UI component based on the following requirements:
-      **Description**: ${data.prompt}
-      **Framework**: ${framework}
-       **Design Considerations**:
-       - Ensure responsiveness on different screen sizes
-       - Use a consistent color scheme
-       - Proper spacing, padding, and alignment
-  - Maintain accessibility (ARIA attributes if needed)
+      const designUIPrompt = `Generate a **fully functional, responsive, and visually appealing UI component** based on the following requirements:
 
-   **Output Format**:
-  - Only return the generated ${data.framework} code
-  - Just stick to the UI design, no extra framework code needed!
-  - Create design code that's super intuitive and user-friendly!
-  - Always include complete HTML code how to use this ${data.framework} code.
-  - No extra comments or explanations
+### **Component Details**:
+- **Description**: ${data.prompt}
+- **Framework**: ${framework}
 
-  ${data.context ? `\nAdditional context: ${data.context}` : ""}
-      `;
+### **Requirements**:
+- Provide a **complete and valid HTML document** that includes:
+  - \`<!DOCTYPE html>\`, \`<html>\`, \`<head>\`, \`<body>\`, and all necessary elements.
+  - Full CSS styling (either within a \`<style>\` tag or external file reference).
+  - If using JavaScript (e.g., interactive elements), include it inside a \`<script>\` tag within the HTML.
+  - Ensure the component is **fully responsive** and **accessible** (ARIA attributes where needed).
+- **Do not** provide code snippets; the response should always contain a **full, standalone HTML document**.
+- **Do not** include explanations, comments, or descriptions.  
+
+${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
+      
       // Enhanced Bug Fixing Prompt
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3.2:latest", // or any preferred model
+        model: "llama3:latest", // or any preferred model
         prompt: designUIPrompt.trim(),
         stream: false,
       });
+
+      
 
       const enhancedContent = response?.data?.response || "";
       setPromptEnhanceResult(enhancedContent);
@@ -1590,14 +1591,14 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                  toolType === 5 ? (
                  
                   <Tabs defaultValue="preview" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList>
         <TabsTrigger value="preview">Preview</TabsTrigger>
         <TabsTrigger value="code">Code</TabsTrigger>
       </TabsList>
-      <TabsContent value="preview">
+      <TabsContent value="preview" className="my-5">
       <CodePreview code={promptEnhanceResult}/>
       </TabsContent>
-      <TabsContent value="code">
+      <TabsContent value="code" className="my-5">
       <CodeBlockEditor
                  language="javascript"
                  placeholder="Write your code here..."

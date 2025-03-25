@@ -17,6 +17,8 @@ export async function GET() {
         "Content-Type": "application/json",
       },
     });
+    console.log("status", status);
+    
     return NextResponse.json(data, { status: API_ERROR_CODE.SUCCESS });
   } catch (error) {
     // Check if ollama is running
