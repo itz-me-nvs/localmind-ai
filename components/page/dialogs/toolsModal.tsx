@@ -1,11 +1,14 @@
 import CodeBlockEditor from "@/components/ai/codeBlockEditor";
-import { Badge } from "@/components/ui/badge";
+import CodePreview from "@/components/ai/codePreview";
 import { BounceLoader } from "@/components/ui/bounceLoader";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import {
   Dialog,
-  DialogContent
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -27,6 +30,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@radix-ui/react-popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import axios from "axios";
 import { CommandList } from "cmdk";
 import {
@@ -39,6 +43,7 @@ import {
   CopyIcon,
   FileIcon,
   LanguagesIcon,
+  NotebookPenIcon,
   PencilIcon,
   SparklesIcon,
   XIcon
@@ -186,11 +191,19 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       description:
         "To supercharge your coding speed, dive deep into your project's codebase and surroundings!",
       icon: BrainIcon,
-      isNewFeature: true
+      disable: true,
+    },
+    {
+      id: 8,
+      title: "Technical Writing",
+      description:
+        "Craft compelling and informative technical content with our AI-powered writing assistant.",
+      icon: NotebookPenIcon,
+      disable: true,
     },
 
     {
-      id: 8,
+      id: 9,
       title: "Coding Assistant",
       description:
         "Transform your project with the help of our AI coding assistant, making it easier and more efficient.",
@@ -302,6 +315,11 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       description: "AI generates potential solutions",
     },
     {
+      label: "Refactor Code",
+      value: "refactor_code",
+      description: "AI suggests code refactoring options",
+    },
+    {
       label: "Explain the Issue",
       value: "explain_issue",
       description: "AI provides a beginner-friendly explanation of the bug",
@@ -403,6 +421,8 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     }
   ];
 
+ 
+
   const [toolType, setToolType] = useState<number>(0);
   const [ToolItem, setToolItem] = useState(toolList[0]);
   const [context, setContext] = useState("");
@@ -492,14 +512,12 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     mode: "onChange", // Add this to enable validation as user types
   });
 
+  const toolsForms = [promptEnhancerForm, rewriteForm, summarizeForm, bugFixForm, langTranslationForm, designUIForm, unitTestForm];
+
   // reset tools on load
   useEffect(() => {
     if (open) {
-      promptEnhancerForm.reset();
-      rewriteForm.reset();
-      summarizeForm.reset();
-      bugFixForm.reset();
-      langTranslationForm.reset();
+     toolsForms.forEach(item=> item.reset())
       setToolType(0);
       setPromptEnhanceResult("");
     }
@@ -509,6 +527,13 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   const handleToolTypeChange = (newToolType: number) => {
     setToolType(newToolType);
     setPromptEnhanceResult("");
+
+    // reset the forms exclude the current selected form
+    toolsForms.forEach((item, index)=> {
+      if(index != newToolType){
+        item.reset()
+      }
+    })
 
     const selectedTool =
       toolList.find((t) => t.id === newToolType) || toolList[0];
@@ -680,7 +705,10 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   - Only return the generated ${data.framework} code
   - Just stick to the UI design, no extra framework code needed!
   - Create design code that's super intuitive and user-friendly!
+  - Always include complete HTML code how to use this ${data.framework} code.
   - No extra comments or explanations
+
+  ${data.context ? `\nAdditional context: ${data.context}` : ""}
       `;
       // Enhanced Bug Fixing Prompt
       const response = await axios.post("/api/ollama/generate", {
@@ -833,23 +861,14 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="min-w-[95%] h-[95%] overflow-hidden">
-        {/* <DialogHeader>
+
+     <DialogContent className="min-w-[95%] h-[95%] overflow-hidden">
+      <div>
+      <DialogHeader>
           <DialogTitle>{ToolItem.title}</DialogTitle>
           <DialogDescription>{ToolItem.description}</DialogDescription>
-        </DialogHeader> */}
-
-       
-<div className="flex flex-col">
-         <div>
-         <h2 className="font-bold text-lg">
-          {ToolItem.title}
-          </h2>
-          <p className="text-sm text-gray-500">
-          {ToolItem.description}
-          </p>
-         </div>
-         <div className="grid grid-cols-4 gap-4 py-4 h-full my-10">
+        </DialogHeader>
+        <div className="grid grid-cols-4 gap-4 py-4 h-full my-10">
           
           <div className="col-span-3 bg-white dark:bg-gray-900 p-2 rounded-lg">
 
@@ -881,7 +900,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                       <FormItem>
                         <Textarea
                           placeholder="Add context for better output (optional)"
-                          className="mt-4 w-full grid"
+                          className="mt-4 w-full grid min-h-[150px]"
                           {...field}
                         />
                       </FormItem>
@@ -995,7 +1014,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                       <FormItem>
                         <Textarea
                           placeholder="Add context for better output (optional)"
-                          className="mt-4"
+                          className="mt-4 min-h-[150px]"
                           {...field}
                         />
                       </FormItem>
@@ -1143,7 +1162,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                       <FormItem className="col-span-2">
                         <Textarea
                           placeholder="Add context for better output (optional)"
-                          className="mt-4"
+                          className="mt-4 min-h-[150px]"
                           {...field}
                         />
                       </FormItem>
@@ -1216,36 +1235,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={bugFixForm.control}
-                    name="detection"
-                    render={({ field }) => (
-                      <FormItem className="mt-4">
-                        <label className="block text-sm font-medium">
-                          Bug Type
-                        </label>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select bug type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {aiBugDetectionOptions.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label} ({option.description})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                 
 
                   <FormField
                     control={bugFixForm.control}
@@ -1356,7 +1346,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                       <FormItem className="col-span-2">
                         <Textarea
                           placeholder="Add context for better output (optional)"
-                          className="mt-4"
+                          className="mt-4 min-h-[150px]"
                           {...field}
                         />
                       </FormItem>
@@ -1476,7 +1466,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                       <FormItem className="col-span-2">
                         <Textarea
                           placeholder="Add context for better output (optional)"
-                          className="mt-4"
+                          className="mt-4 min-h-[150px]"
                           {...field}
                         />
                       </FormItem>
@@ -1552,6 +1542,20 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                     )}
                   />
 
+<FormField
+                    control={unitTestForm.control}
+                    name="context"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <Textarea
+                          placeholder="Add context for better output (optional)"
+                          className="mt-4 min-h-[150px]"
+                          {...field}
+                        />
+                      </FormItem>
+                    )}
+                  />
+
                  
                   <Button
                     disabled={isLoading}
@@ -1575,7 +1579,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
 
             {promptEnhanceResult !== "" && (
               <div className="grid w-full gap-2 relative mt-4">
-                {toolType !== 4 && toolType !== 6 ? (
+                {toolType !== 4 && toolType !== 6 && toolType !== 5 ? (
                   <Textarea
                     rows={1}
                     readOnly
@@ -1583,13 +1587,34 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                     className="min-h-[300px] focus-visible:ring-0 pr-10"
                   />
                 ) : (
-                  <CodeBlockEditor
-                    language="javascript"
-                    placeholder="Write your code here..."
-                    defaultCode={promptEnhanceResult}
-                    readOnly={true}
-                    isInput={false}
-                  />
+                 toolType === 5 ? (
+                 
+                  <Tabs defaultValue="preview" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="preview">Preview</TabsTrigger>
+        <TabsTrigger value="code">Code</TabsTrigger>
+      </TabsList>
+      <TabsContent value="preview">
+      <CodePreview code={promptEnhanceResult}/>
+      </TabsContent>
+      <TabsContent value="code">
+      <CodeBlockEditor
+                 language="javascript"
+                 placeholder="Write your code here..."
+                 defaultCode={promptEnhanceResult}
+                 readOnly={true}
+                 isInput={false}
+               />
+      </TabsContent>
+    </Tabs>
+                 
+                 ) :  <CodeBlockEditor
+                 language="javascript"
+                 placeholder="Write your code here..."
+                 defaultCode={promptEnhanceResult}
+                 readOnly={true}
+                 isInput={false}
+               />
                 )}
                 {promptCopyStatus === "idle" && (
                   <CopyIcon
@@ -1628,9 +1653,9 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
                   />
                   <span className="font-medium text-ellipsis overflow-hidden whitespace-nowrap">
                     {tool.title}
-                    {
+                    {/* {
                       tool.isNewFeature && <Badge variant={"secondary"} className="ml-2 pb-1 px-3 text-xs rounded-2xl">New</Badge>
-                    }
+                    } */}
                   </span>
                 </li>
               ))}
@@ -1638,10 +1663,10 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
           </div>
         </div>
 
-        </div>
-
+      </div>
       
       </DialogContent>
+
     </Dialog>
   );
 }

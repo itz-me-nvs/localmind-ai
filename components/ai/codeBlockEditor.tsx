@@ -9,7 +9,7 @@ export default function CodeBlock({defaultCode, language, placeholder, readOnly 
     `${defaultCode}`
   );
     return (
-     <div className={`"w-full ${isInput ? 'max-h-[150px]' : 'max-h-[350px]'} overflow-auto`}>
+     <div className={`"w-full min-h-[100px] ${isInput ? 'max-h-[150px]' : 'max-h-[350px]'} overflow-auto border rounded-lg shadow-sm`}>
        <CodeEditor
       value={code}
       language="js"
@@ -21,7 +21,6 @@ export default function CodeBlock({defaultCode, language, placeholder, readOnly 
       style={{
         fontSize: 12,
         borderRadius: 4,
-        border: "1px solid rgba(255, 255, 255, 0.1)",
         fontFamily:
           "ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace"
       }}
