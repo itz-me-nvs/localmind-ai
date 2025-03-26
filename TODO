@@ -11,13 +11,17 @@ Redux State Management.✅
 
 
 # thing to do
-stream tool section API calls.
+stream tool section API calls(Common Stream Code).
 Sidebar for Recent Chats.
 Add to Chat Option in tools.
-Chat UI Issue fixes
 Fussy Search on Recent chats
 Performance & Error handling
 Global Error Monitoring (sentry.io)
+
+####
+Chat UI Issue fixes.
+Selected Model from redux.
+Theme Based issue
 
 # Marketing.
 Project Landing Page.

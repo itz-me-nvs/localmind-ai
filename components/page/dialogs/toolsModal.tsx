@@ -53,7 +53,7 @@ import {
   SparklesIcon,
   XIcon,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -439,6 +439,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   const [filteredComponents, setFilteredComponents] = useState<
     ToolDropdownType[]
   >([]);
+  const promptEnhancerRef = useRef<HTMLDivElement | null>(null);
 
   const COLOR_CODE = FANCY_COLORS;
 
@@ -533,6 +534,23 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       setPromptEnhanceResult("");
     }
   }, [open]);
+
+  const promptEnhancerScroll = ()=> {
+    if(promptEnhancerRef.current){
+      promptEnhancerRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }
+
+  // scroll to the prompt enhancer on submit
+
+  useEffect(() => {
+    let animationFrameId: number;
+    animationFrameId = requestAnimationFrame(promptEnhancerScroll);
+
+    return ()=> {
+      cancelAnimationFrame(animationFrameId);
+    }
+  }, [promptEnhanceResult])
 
   // Reset forms when tool type changes
   const handleToolTypeChange = (newToolType: number) => {
@@ -882,15 +900,15 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="min-w-[95%] h-[95%]">
+      <DialogContent className="min-w-[95%] h-[95%] overflow-hidden">
         <div className="h-full">
           <DialogHeader>
             <DialogTitle>{ToolItem.title}</DialogTitle>
             <DialogDescription>{ToolItem.description}</DialogDescription>
             {/* <DialogClose className="bg-red-500"/> */}
           </DialogHeader>
-          <div className="grid grid-cols-4 gap-4 py-4 h-full my-10 overflow-hidden">
-            <div className="col-span-3 bg-white dark:bg-gray-900 p-2 rounded-lg">
+          <div className="grid grid-cols-4 gap-4 py-6 h-full my-10">
+            <div className="col-span-3 bg-white dark:bg-gray-900 p-2 rounded-lg h-full  overflow-auto" style={{maxHeight: "min(100vh - 2em, 600px"}}>
               {toolType === 0 && (
                 <Form {...promptEnhancerForm}>
                   <form
@@ -1594,13 +1612,14 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
               )}
 
               {promptEnhanceResult !== "" && (
-                <div className="grid w-full gap-2 relative mt-4">
+                <div ref={promptEnhancerRef} className="grid w-full gap-2 relative mt-4">
                   {toolType !== 4 && toolType !== 6 && toolType !== 5 ? (
                     <Textarea
+                    
                       rows={1}
                       readOnly
                       value={promptEnhanceResult}
-                      className="h-full focus-visible:ring-0 pr-10"
+                      className="h-full focus-visible:ring-0 pr-10 min-h-[300px]"
                     />
                   ) : toolType === 5 ? (
                     <Tabs defaultValue="preview" className="w-full">
