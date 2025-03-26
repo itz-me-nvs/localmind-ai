@@ -2,10 +2,15 @@ import CodeBlockEditor from "@/components/ai/codeBlockEditor";
 import CodePreview from "@/components/ai/codePreview";
 import { BounceLoader } from "@/components/ui/bounceLoader";
 import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import {
-  Dialog,
-  DialogContent,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Dialog, DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle
@@ -46,10 +51,11 @@ import {
   NotebookPenIcon,
   PencilIcon,
   SparklesIcon,
-  XIcon
+  XIcon,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import z from "zod";
 
 type ToolsModalProps = {
@@ -209,7 +215,6 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
         "Transform your project with the help of our AI coding assistant, making it easier and more efficient.",
       icon: BotIcon,
       disable: true,
-      
     },
   ];
 
@@ -418,10 +423,8 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     {
       label: "Jest",
       id: 1,
-    }
+    },
   ];
-
- 
 
   const [toolType, setToolType] = useState<number>(0);
   const [ToolItem, setToolItem] = useState(toolList[0]);
@@ -507,17 +510,25 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     defaultValues: {
       code: "",
       context: "",
-      targetFrameWork: "0"
+      targetFrameWork: "0",
     },
     mode: "onChange", // Add this to enable validation as user types
   });
 
-  const toolsForms = [promptEnhancerForm, rewriteForm, summarizeForm, bugFixForm, langTranslationForm, designUIForm, unitTestForm];
+  const toolsForms = [
+    promptEnhancerForm,
+    rewriteForm,
+    summarizeForm,
+    bugFixForm,
+    langTranslationForm,
+    designUIForm,
+    unitTestForm,
+  ];
 
   // reset tools on load
   useEffect(() => {
     if (open) {
-     toolsForms.forEach(item=> item.reset())
+      toolsForms.forEach((item) => item.reset());
       setToolType(0);
       setPromptEnhanceResult("");
     }
@@ -529,11 +540,11 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     setPromptEnhanceResult("");
 
     // reset the forms exclude the current selected form
-    toolsForms.forEach((item, index)=> {
-      if(index != newToolType){
-        item.reset()
+    toolsForms.forEach((item, index) => {
+      if (index != newToolType) {
+        item.reset();
       }
-    })
+    });
 
     const selectedTool =
       toolList.find((t) => t.id === newToolType) || toolList[0];
@@ -690,7 +701,9 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       setIsLoading(true);
       setPromptEnhanceResult("");
 
-      const framework = styleFramework.find(s => s.id == Number(data.framework))?.label;
+      const framework = styleFramework.find(
+        (s) => s.id == Number(data.framework)
+      )?.label;
 
       const designUIPrompt = `Generate a **fully functional, responsive, and visually appealing UI component** based on the following requirements:
 
@@ -708,22 +721,31 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
 - **Do not** include explanations, comments, or descriptions.  
 
 ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
-      
+
       // Enhanced Bug Fixing Prompt
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3:latest", // or any preferred model
+        model: "llama3.2:latest", // or any preferred model
         prompt: designUIPrompt.trim(),
         stream: false,
       });
-
-      
-
       const enhancedContent = response?.data?.response || "";
       setPromptEnhanceResult(enhancedContent);
       setIsLoading(false);
     } catch (error) {
+      console.log("i am heere", error);
+
       setIsLoading(false);
-      throw error;
+      const response = (error as any)?.response?.data?.error;
+      console.log("response", response);
+
+      if (response) {
+        toast.error(response, {
+          style: {
+            backgroundColor: "hsl(var(--destructive))",
+            color: "hsl(var(--destructive-foreground))",
+          },
+        });
+      }
     }
   }
 
@@ -764,10 +786,7 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
     }
   }
 
-
-  async function OnSubmitUnitTest(
-    data: z.infer<typeof unitTestScheme>
-  ) {
+  async function OnSubmitUnitTest(data: z.infer<typeof unitTestScheme>) {
     try {
       setIsLoading(true);
       setPromptEnhanceResult("");
@@ -830,7 +849,6 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
 
     designUIForm.setValue("prompt", value);
     console.log("value", value);
-    
 
     // check if value match with @
     const match = value.match(/@(\w*)$/);
@@ -849,12 +867,14 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
   };
 
   const handleComponentSelect = (item: ToolDropdownType) => {
-    const replacedPrompt = designUIForm.getValues().prompt.replace(/@\w*$/, item.label);
+    const replacedPrompt = designUIForm
+      .getValues()
+      .prompt.replace(/@\w*$/, item.label);
     console.log("replacedPrompt", replacedPrompt);
-        
+
     designUIForm.setValue("prompt", replacedPrompt);
     setIsComponentMention(false);
-  }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMarkdown(e.target.value);
@@ -862,228 +882,289 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-
-     <DialogContent className="min-w-[95%] h-[95%] overflow-hidden">
-      <div>
-      <DialogHeader>
-          <DialogTitle>{ToolItem.title}</DialogTitle>
-          <DialogDescription>{ToolItem.description}</DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-4 gap-4 py-4 h-full my-10">
-          
-          <div className="col-span-3 bg-white dark:bg-gray-900 p-2 rounded-lg">
-
-            {toolType === 0 && (
-              <Form {...promptEnhancerForm}>
-                <form
-                  onSubmit={promptEnhancerForm.handleSubmit(
-                    OnSubmitPromptEnhance
-                  )}
-                >
-                  <FormField
-                    control={promptEnhancerForm.control}
-                    name="prompt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Input
-                          className="focus-visible:ring-0 w-full"
-                          placeholder="Type your prompt here."
-                          {...field}
-                        />
-                        <FormMessage />
-                      </FormItem>
+      <DialogContent className="min-w-[95%] h-[95%]">
+        <div className="h-full">
+          <DialogHeader>
+            <DialogTitle>{ToolItem.title}</DialogTitle>
+            <DialogDescription>{ToolItem.description}</DialogDescription>
+            {/* <DialogClose className="bg-red-500"/> */}
+          </DialogHeader>
+          <div className="grid grid-cols-4 gap-4 py-4 h-full my-10 overflow-hidden">
+            <div className="col-span-3 bg-white dark:bg-gray-900 p-2 rounded-lg">
+              {toolType === 0 && (
+                <Form {...promptEnhancerForm}>
+                  <form
+                    onSubmit={promptEnhancerForm.handleSubmit(
+                      OnSubmitPromptEnhance
                     )}
-                  />
-                  <FormField
-                    control={promptEnhancerForm.control}
-                    name="context"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Textarea
-                          placeholder="Add context for better output (optional)"
-                          className="mt-4 w-full grid min-h-[150px]"
-                          {...field}
-                        />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    disabled={isLoading}
-                    type="submit"
-                    className="flex items-center w-full mt-4"
                   >
-                    {isLoading ? (
-                      <BounceLoader />
-                    ) : (
-                      <div className="flex items-center">
-                        <SparklesIcon className="h-5 w-5 mr-2" />
-                        <span>Enhance</span>
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            )}
-
-            {toolType === 1 && (
-              <Form {...rewriteForm}>
-                <form
-                  onSubmit={rewriteForm.handleSubmit(OnSubmitRewriteEnhance)}
-                >
-                  <FormField
-                    control={rewriteForm.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Input
-                          className="focus-visible:ring-0 w-full"
-                          placeholder="Type your content here..."
-                          {...field}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-2 gap-4 items-center mt-4">
                     <FormField
-                      control={rewriteForm.control}
-                      name="tone"
+                      control={promptEnhancerForm.control}
+                      name="prompt"
                       render={({ field }) => (
                         <FormItem>
-                          <label className="block text-sm font-medium">
-                            Tone
-                          </label>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choose a tone" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {toneOptions.map((option) => (
-                                <SelectItem
-                                  key={option.id}
-                                  value={option.id.toString()}
-                                >
-                                  {option.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            className="focus-visible:ring-0 w-full"
+                            placeholder="Type your prompt here."
+                            {...field}
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     <FormField
-                      control={rewriteForm.control}
-                      name="contentLength"
+                      control={promptEnhancerForm.control}
+                      name="context"
                       render={({ field }) => (
                         <FormItem>
-                          <label className="block text-sm font-medium">
-                            Length
-                          </label>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select length" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {lengthLabels.map((option) => (
-                                <SelectItem
-                                  key={option.id}
-                                  value={option.id.toString()}
-                                >
-                                  {option.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Textarea
+                            placeholder="Add context for better output (optional)"
+                            className="mt-4 w-full grid min-h-[150px]"
+                            {...field}
+                          />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      disabled={isLoading}
+                      type="submit"
+                      className="flex items-center w-full mt-4"
+                    >
+                      {isLoading ? (
+                        <BounceLoader />
+                      ) : (
+                        <div className="flex items-center">
+                          <SparklesIcon className="h-5 w-5 mr-2" />
+                          <span>Enhance</span>
+                        </div>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+
+              {toolType === 1 && (
+                <Form {...rewriteForm}>
+                  <form
+                    onSubmit={rewriteForm.handleSubmit(OnSubmitRewriteEnhance)}
+                  >
+                    <FormField
+                      control={rewriteForm.control}
+                      name="message"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Input
+                            className="focus-visible:ring-0 w-full"
+                            placeholder="Type your content here..."
+                            {...field}
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
+                    <div className="grid grid-cols-2 gap-4 items-center mt-4">
+                      <FormField
+                        control={rewriteForm.control}
+                        name="tone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <label className="block text-sm font-medium">
+                              Tone
+                            </label>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a tone" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {toneOptions.map((option) => (
+                                  <SelectItem
+                                    key={option.id}
+                                    value={option.id.toString()}
+                                  >
+                                    {option.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={rewriteForm.control}
+                        name="contentLength"
+                        render={({ field }) => (
+                          <FormItem>
+                            <label className="block text-sm font-medium">
+                              Length
+                            </label>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select length" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {lengthLabels.map((option) => (
+                                  <SelectItem
+                                    key={option.id}
+                                    value={option.id.toString()}
+                                  >
+                                    {option.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                  <FormField
-                    control={rewriteForm.control}
-                    name="context"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Textarea
-                          placeholder="Add context for better output (optional)"
-                          className="mt-4 min-h-[150px]"
-                          {...field}
-                        />
-                      </FormItem>
+                    <FormField
+                      control={rewriteForm.control}
+                      name="context"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Textarea
+                            placeholder="Add context for better output (optional)"
+                            className="mt-4 min-h-[150px]"
+                            {...field}
+                          />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      disabled={isLoading}
+                      type="submit"
+                      className="flex items-center w-full mt-4"
+                    >
+                      {isLoading ? (
+                        <BounceLoader />
+                      ) : (
+                        <div className="flex items-center">
+                          <PencilIcon className="h-5 w-5 mr-2" />
+                          <span>Enhance Content</span>
+                        </div>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+
+              {toolType === 2 && (
+                <Form {...summarizeForm}>
+                  <form
+                    onSubmit={summarizeForm.handleSubmit(
+                      OnSubmitSummarizeEnhance
                     )}
-                  />
-
-                  <Button
-                    disabled={isLoading}
-                    type="submit"
-                    className="flex items-center w-full mt-4"
                   >
-                    {isLoading ? (
-                      <BounceLoader />
-                    ) : (
-                      <div className="flex items-center">
-                        <PencilIcon className="h-5 w-5 mr-2" />
-                        <span>Enhance Content</span>
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            )}
-
-            {toolType === 2 && (
-              <Form {...summarizeForm}>
-                <form
-                  onSubmit={summarizeForm.handleSubmit(
-                    OnSubmitSummarizeEnhance
-                  )}
-                >
-                  <FormField
-                    control={summarizeForm.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Input
-                          className="focus-visible:ring-0 w-full"
-                          placeholder="Type your content here..."
-                          {...field}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-2 gap-4 items-center mt-4">
                     <FormField
                       control={summarizeForm.control}
-                      name="length"
+                      name="message"
                       render={({ field }) => (
                         <FormItem>
+                          <Input
+                            className="focus-visible:ring-0 w-full"
+                            placeholder="Type your content here..."
+                            {...field}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4 items-center mt-4">
+                      <FormField
+                        control={summarizeForm.control}
+                        name="length"
+                        render={({ field }) => (
+                          <FormItem>
+                            <label className="block text-sm font-medium">
+                              Style
+                            </label>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select length" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {summaryLengths.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={summarizeForm.control}
+                        name="style"
+                        render={({ field }) => (
+                          <FormItem>
+                            <label className="block text-sm font-medium">
+                              Style
+                            </label>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a style" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {summarizationStyles.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={summarizeForm.control}
+                      name="emphasis"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
                           <label className="block text-sm font-medium">
-                            Style
+                            Emphasis
                           </label>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select length" />
+                              <SelectValue placeholder="Select emphasis" />
                             </SelectTrigger>
                             <SelectContent>
-                              {summaryLengths.map((option) => (
+                              {contextEmphasis.map((option) => (
                                 <SelectItem
                                   key={option.value}
                                   value={option.value}
                                 >
-                                  {option.label}
+                                  {option.label} ({option.description})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1095,11 +1176,92 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
 
                     <FormField
                       control={summarizeForm.control}
-                      name="style"
+                      name="context"
                       render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <Textarea
+                            placeholder="Add context for better output (optional)"
+                            className="mt-4 min-h-[150px]"
+                            {...field}
+                          />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      disabled={isLoading}
+                      type="submit"
+                      className="flex items-center w-full mt-4"
+                    >
+                      {isLoading ? (
+                        <BounceLoader />
+                      ) : (
+                        <div className="flex items-center">
+                          <PencilIcon className="h-5 w-5 mr-2" />
+                          <span>Enhance Content</span>
+                        </div>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+
+              {toolType === 3 && (
+                <Form {...bugFixForm}>
+                  <form onSubmit={bugFixForm.handleSubmit(OnSubmitBugFix)}>
+                    <FormField
+                      control={bugFixForm.control}
+                      name="code"
+                      render={({ field, formState, fieldState }) => (
                         <FormItem>
+                          <CodeBlockEditor
+                            language="javascript"
+                            placeholder="Write your code here..."
+                            {...field}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={bugFixForm.control}
+                      name="detection"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
                           <label className="block text-sm font-medium">
-                            Style
+                            Bug Type
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select bug type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {aiBugDetectionOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label} ({option.description})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={bugFixForm.control}
+                      name="analysis"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <label className="block text-sm font-medium">
+                            Code Analysis
                           </label>
                           <Select
                             onValueChange={field.onChange}
@@ -1109,10 +1271,81 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
                               <SelectValue placeholder="Choose a style" />
                             </SelectTrigger>
                             <SelectContent>
-                              {summarizationStyles.map((option) => (
+                              {aiCodeAnalysis.map((option) => (
                                 <SelectItem
                                   key={option.value}
                                   value={option.value}
+                                >
+                                  {option.label} ({option.description})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      disabled={isLoading}
+                      type="submit"
+                      className="flex items-center w-full mt-4"
+                    >
+                      {isLoading ? (
+                        <BounceLoader />
+                      ) : (
+                        <div className="flex items-center">
+                          <PencilIcon className="h-5 w-5 mr-2" />
+                          <span>Enhance Content</span>
+                        </div>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+
+              {toolType === 4 && (
+                <Form {...langTranslationForm}>
+                  <form
+                    onSubmit={langTranslationForm.handleSubmit(
+                      OnSubmitLangTranslation
+                    )}
+                  >
+                    <FormField
+                      control={langTranslationForm.control}
+                      name="code"
+                      render={({ field, formState, fieldState }) => (
+                        <FormItem>
+                          <CodeBlockEditor
+                            language="javascript"
+                            placeholder="Write your code here..."
+                            {...field}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={langTranslationForm.control}
+                      name="targetLanguage"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <label className="block text-sm font-medium">
+                            Target Language
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a language" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {targetLanguages.map((option) => (
+                                <SelectItem
+                                  key={option.id}
+                                  value={option.id.toString()}
                                 >
                                   {option.label}
                                 </SelectItem>
@@ -1123,551 +1356,328 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
                         </FormItem>
                       )}
                     />
-                  </div>
 
-                  <FormField
-                    control={summarizeForm.control}
-                    name="emphasis"
-                    render={({ field }) => (
-                      <FormItem className="mt-4">
-                        <label className="block text-sm font-medium">
-                          Emphasis
-                        </label>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select emphasis" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {contextEmphasis.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label} ({option.description})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={langTranslationForm.control}
+                      name="context"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <Textarea
+                            placeholder="Add context for better output (optional)"
+                            className="mt-4 min-h-[150px]"
+                            {...field}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      disabled={isLoading}
+                      type="submit"
+                      className="flex items-center w-full mt-4"
+                    >
+                      {isLoading ? (
+                        <BounceLoader />
+                      ) : (
+                        <div className="flex items-center">
+                          <PencilIcon className="h-5 w-5 mr-2" />
+                          <span>Enhance Content</span>
+                        </div>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
 
-                  <FormField
-                    control={summarizeForm.control}
-                    name="context"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <Textarea
-                          placeholder="Add context for better output (optional)"
-                          className="mt-4 min-h-[150px]"
-                          {...field}
-                        />
-                      </FormItem>
-                    )}
-                  />
+              {toolType === 5 && (
+                <Form {...designUIForm}>
+                  <form onSubmit={designUIForm.handleSubmit(OnSubmitDesignUI)}>
+                    <FormField
+                      control={designUIForm.control}
+                      name="prompt"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Popover open={IsComponentMention}>
+                            <PopoverTrigger asChild>
+                              <div>
+                                <Input
+                                  placeholder="Describe about your design here.."
+                                  onChange={handleDesignUiInputChange}
+                                  value={field.value}
+                                />
+                                <Label className="text-xs text-gray-400 dark:text-gray-600">
+                                  Type @component to list all UI components
+                                  available
+                                </Label>
+                              </div>
+                            </PopoverTrigger>
 
-                  <Button
-                    disabled={isLoading}
-                    type="submit"
-                    className="flex items-center w-full mt-4"
-                  >
-                    {isLoading ? (
-                      <BounceLoader />
-                    ) : (
-                      <div className="flex items-center">
-                        <PencilIcon className="h-5 w-5 mr-2" />
-                        <span>Enhance Content</span>
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            )}
+                            {IsComponentMention && (
+                              <PopoverContent className="w-80 mt-[-30px]">
+                                <Command className="rounded-lg border shadow-md md:min-w-[300px] -z-10">
+                                  <CommandInput placeholder="Type a command or search..." />
+                                  <ScrollArea className="h-52 rounded-md border">
+                                    <CommandList>
+                                      <CommandEmpty>
+                                        No results found.
+                                      </CommandEmpty>
+                                      <CommandGroup>
+                                        {filteredComponents.length > 0 ? (
+                                          filteredComponents.map((c) => (
+                                            <CommandItem
+                                              key={c.id}
+                                              onSelect={() =>
+                                                handleComponentSelect(c)
+                                              }
+                                            >
+                                              {c.label}
+                                            </CommandItem>
+                                          ))
+                                        ) : (
+                                          <div className="p-2 text-sm text-gray-500">
+                                            No results found
+                                          </div>
+                                        )}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </ScrollArea>
+                                </Command>
+                              </PopoverContent>
+                            )}
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-            {toolType === 3 && (
-              <Form {...bugFixForm}>
-                <form onSubmit={bugFixForm.handleSubmit(OnSubmitBugFix)}>
-                  <FormField
-                    control={bugFixForm.control}
-                    name="code"
-                    render={({ field, formState, fieldState }) => (
-                      <FormItem>
+                    <FormField
+                      control={designUIForm.control}
+                      name="framework"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <label className="block text-sm font-medium">
+                            Style Framework
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a style" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {styleFramework.map((option) => (
+                                <SelectItem
+                                  key={option.id}
+                                  value={option.id.toString()}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={designUIForm.control}
+                      name="context"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <Textarea
+                            placeholder="Add context for better output (optional)"
+                            className="mt-4 min-h-[150px]"
+                            {...field}
+                          />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      disabled={isLoading}
+                      type="submit"
+                      className="flex items-center w-full mt-4"
+                    >
+                      {isLoading ? (
+                        <BounceLoader />
+                      ) : (
+                        <div className="flex items-center">
+                          <PencilIcon className="h-5 w-5 mr-2" />
+                          <span>Design UI</span>
+                        </div>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+
+              {toolType === 6 && (
+                <Form {...unitTestForm}>
+                  <form onSubmit={unitTestForm.handleSubmit(OnSubmitUnitTest)}>
+                    <FormField
+                      control={unitTestForm.control}
+                      name="code"
+                      render={({ field }) => (
+                        <FormItem>
+                          <CodeBlockEditor
+                            language="javascript"
+                            placeholder="Write your code here..."
+                            {...field}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={unitTestForm.control}
+                      name="targetFrameWork"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <label className="block text-sm font-medium">
+                            Testing Framework
+                          </label>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a style" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {targetUnitFrameworks.map((option) => (
+                                <SelectItem
+                                  key={option.id}
+                                  value={option.id.toString()}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={unitTestForm.control}
+                      name="context"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <Textarea
+                            placeholder="Add context for better output (optional)"
+                            className="mt-4 min-h-[150px]"
+                            {...field}
+                          />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      disabled={isLoading}
+                      type="submit"
+                      className="flex items-center w-full mt-4"
+                    >
+                      {isLoading ? (
+                        <BounceLoader />
+                      ) : (
+                        <div className="flex items-center">
+                          <PencilIcon className="h-5 w-5 mr-2" />
+                          <span>Generate Unit Test</span>
+                        </div>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+
+              {promptEnhanceResult !== "" && (
+                <div className="grid w-full gap-2 relative mt-4">
+                  {toolType !== 4 && toolType !== 6 && toolType !== 5 ? (
+                    <Textarea
+                      rows={1}
+                      readOnly
+                      value={promptEnhanceResult}
+                      className="h-full focus-visible:ring-0 pr-10"
+                    />
+                  ) : toolType === 5 ? (
+                    <Tabs defaultValue="preview" className="w-full">
+                      <TabsList>
+                        <TabsTrigger value="preview">Preview</TabsTrigger>
+                        <TabsTrigger value="code">Code</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="preview" className="my-5 overflow-hidden">
+                        <CodePreview code={promptEnhanceResult} />
+                      </TabsContent>
+                      <TabsContent value="code" className="my-5 overflow-hidden">
                         <CodeBlockEditor
                           language="javascript"
                           placeholder="Write your code here..."
-                          {...field}
+                          defaultCode={promptEnhanceResult}
+                          readOnly={true}
+                          isInput={false}
                         />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bugFixForm.control}
-                    name="detection"
-                    render={({ field }) => (
-                      <FormItem className="mt-4">
-                        <label className="block text-sm font-medium">
-                          Bug Type
-                        </label>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select bug type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {aiBugDetectionOptions.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label} ({option.description})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                 
-
-                  <FormField
-                    control={bugFixForm.control}
-                    name="analysis"
-                    render={({ field }) => (
-                      <FormItem className="mt-4">
-                        <label className="block text-sm font-medium">
-                          Code Analysis
-                        </label>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a style" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {aiCodeAnalysis.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label} ({option.description})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    disabled={isLoading}
-                    type="submit"
-                    className="flex items-center w-full mt-4"
-                  >
-                    {isLoading ? (
-                      <BounceLoader />
-                    ) : (
-                      <div className="flex items-center">
-                        <PencilIcon className="h-5 w-5 mr-2" />
-                        <span>Enhance Content</span>
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            )}
-
-            {toolType === 4 && (
-              <Form {...langTranslationForm}>
-                <form
-                  onSubmit={langTranslationForm.handleSubmit(
-                    OnSubmitLangTranslation
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <CodeBlockEditor
+                      language="javascript"
+                      placeholder="Write your code here..."
+                      defaultCode={promptEnhanceResult}
+                      readOnly={true}
+                      isInput={false}
+                    />
                   )}
-                >
-                  <FormField
-                    control={langTranslationForm.control}
-                    name="code"
-                    render={({ field, formState, fieldState }) => (
-                      <FormItem>
-                        <CodeBlockEditor
-                          language="javascript"
-                          placeholder="Write your code here..."
-                          {...field}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {promptCopyStatus === "idle" && (
+                    <CopyIcon
+                      className="h-5 w-5 absolute top-2 right-2 cursor-pointer"
+                      onClick={handleCopyPromptEnhance}
+                    />
+                  )}
+                  {promptCopyStatus === "success" && (
+                    <CheckCheckIcon className="h-5 w-5 absolute top-2 right-2 text-green-500" />
+                  )}
+                  {promptCopyStatus === "error" && (
+                    <XIcon className="h-5 w-5 absolute top-2 right-2 text-red-500" />
+                  )}
+                </div>
+              )}
+            </div>
 
-                  <FormField
-                    control={langTranslationForm.control}
-                    name="targetLanguage"
-                    render={({ field }) => (
-                      <FormItem className="mt-4">
-                        <label className="block text-sm font-medium">
-                          Target Language
-                        </label>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a language" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {targetLanguages.map((option) => (
-                              <SelectItem
-                                key={option.id}
-                                value={option.id.toString()}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={langTranslationForm.control}
-                    name="context"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <Textarea
-                          placeholder="Add context for better output (optional)"
-                          className="mt-4 min-h-[150px]"
-                          {...field}
-                        />
-                      </FormItem>
-                    )}
-                  />
-                  <Button
-                    disabled={isLoading}
-                    type="submit"
-                    className="flex items-center w-full mt-4"
+            <div className="col-span-1 border-l border-gray-200 px-2">
+              <h3 className="text-lg font-semibold mb-4">⚙️ Tools List</h3>
+              <ul className="space-y-2 text-sm">
+                {toolList.map((tool, index) => (
+                  <li
+                    onClick={() => handleToolTypeChange(tool.id)}
+                    key={tool.id}
+                    className={`flex items-center ${
+                      toolType === tool.id
+                        ? "bg-gray-200 dark:bg-gray-700"
+                        : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                    } p-2 rounded-md cursor-pointer ${
+                      tool.disable ? "opacity-40 pointer-events-none" : ""
+                    }`}
                   >
-                    {isLoading ? (
-                      <BounceLoader />
-                    ) : (
-                      <div className="flex items-center">
-                        <PencilIcon className="h-5 w-5 mr-2" />
-                        <span>Enhance Content</span>
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            )}
-
-            {toolType === 5 && (
-              <Form {...designUIForm}>
-                <form onSubmit={designUIForm.handleSubmit(OnSubmitDesignUI)}>
-                  <FormField
-                    control={designUIForm.control}
-                    name="prompt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Popover
-                          open={IsComponentMention}
-                        >
-                          <PopoverTrigger asChild>
-                            <div>
-                              <Input
-                                placeholder="Describe about your design here.."
-                                onChange={handleDesignUiInputChange}
-                                value={field.value}
-                              />
-                              <Label className="text-xs text-gray-400 dark:text-gray-600">
-                                Type @component to list all UI components
-                                available
-                              </Label>
-                            </div>
-                          </PopoverTrigger>
-
-                          {IsComponentMention && (
-                            <PopoverContent className="w-80 mt-[-30px]">
-                              <Command className="rounded-lg border shadow-md md:min-w-[300px] -z-10">
-                              <CommandInput placeholder="Type a command or search..." />
-                                <ScrollArea className="h-52 rounded-md border">
-                                <CommandList>
-                                <CommandEmpty>No results found.</CommandEmpty>
-                                <CommandGroup>
-                                  {
-                                    filteredComponents.length > 0 ? (
-                                      filteredComponents.map(c => <CommandItem
-                                        key={c.id}
-                                        onSelect={()=> handleComponentSelect(c)}
-                                      >
-                                        {c.label}
-                                      </CommandItem>)
-                                    ) : (
-                                      <div className="p-2 text-sm text-gray-500">No results found</div>
-                                    )
-                                  }
-
-                                </CommandGroup>
-                                </CommandList>
-                                </ScrollArea>
-                              </Command>
-                            </PopoverContent>
-                          )}
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={designUIForm.control}
-                    name="framework"
-                    render={({ field }) => (
-                      <FormItem className="mt-4">
-                        <label className="block text-sm font-medium">
-                          Style Framework
-                        </label>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a style" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {styleFramework.map((option) => (
-                              <SelectItem
-                                key={option.id}
-                                value={option.id.toString()}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={designUIForm.control}
-                    name="context"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <Textarea
-                          placeholder="Add context for better output (optional)"
-                          className="mt-4 min-h-[150px]"
-                          {...field}
-                        />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    disabled={isLoading}
-                    type="submit"
-                    className="flex items-center w-full mt-4"
-                  >
-                    {isLoading ? (
-                      <BounceLoader />
-                    ) : (
-                      <div className="flex items-center">
-                        <PencilIcon className="h-5 w-5 mr-2" />
-                        <span>
-                          Design UI
-                        </span>
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            )}
-
-{toolType === 6 && (
-              <Form {...unitTestForm}>
-                <form onSubmit={unitTestForm.handleSubmit(OnSubmitUnitTest)}>
-                  <FormField
-                    control={unitTestForm.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormItem>
-                      <CodeBlockEditor
-                        language="javascript"
-                        placeholder="Write your code here..."
-                        {...field}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={unitTestForm.control}
-                    name="targetFrameWork"
-                    render={({ field }) => (
-                      <FormItem className="mt-4">
-                        <label className="block text-sm font-medium">
-                          Testing Framework
-                        </label>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a style" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {targetUnitFrameworks.map((option) => (
-                              <SelectItem
-                                key={option.id}
-                                value={option.id.toString()}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-<FormField
-                    control={unitTestForm.control}
-                    name="context"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <Textarea
-                          placeholder="Add context for better output (optional)"
-                          className="mt-4 min-h-[150px]"
-                          {...field}
-                        />
-                      </FormItem>
-                    )}
-                  />
-
-                 
-                  <Button
-                    disabled={isLoading}
-                    type="submit"
-                    className="flex items-center w-full mt-4"
-                  >
-                    {isLoading ? (
-                      <BounceLoader />
-                    ) : (
-                      <div className="flex items-center">
-                        <PencilIcon className="h-5 w-5 mr-2" />
-                        <span>
-                         Generate Unit Test
-                        </span>
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            )}
-
-            {promptEnhanceResult !== "" && (
-              <div className="grid w-full gap-2 relative mt-4">
-                {toolType !== 4 && toolType !== 6 && toolType !== 5 ? (
-                  <Textarea
-                    rows={1}
-                    readOnly
-                    value={promptEnhanceResult}
-                    className="min-h-[300px] focus-visible:ring-0 pr-10"
-                  />
-                ) : (
-                 toolType === 5 ? (
-                 
-                  <Tabs defaultValue="preview" className="w-full">
-      <TabsList>
-        <TabsTrigger value="preview">Preview</TabsTrigger>
-        <TabsTrigger value="code">Code</TabsTrigger>
-      </TabsList>
-      <TabsContent value="preview" className="my-5">
-      <CodePreview code={promptEnhanceResult}/>
-      </TabsContent>
-      <TabsContent value="code" className="my-5">
-      <CodeBlockEditor
-                 language="javascript"
-                 placeholder="Write your code here..."
-                 defaultCode={promptEnhanceResult}
-                 readOnly={true}
-                 isInput={false}
-               />
-      </TabsContent>
-    </Tabs>
-                 
-                 ) :  <CodeBlockEditor
-                 language="javascript"
-                 placeholder="Write your code here..."
-                 defaultCode={promptEnhanceResult}
-                 readOnly={true}
-                 isInput={false}
-               />
-                )}
-                {promptCopyStatus === "idle" && (
-                  <CopyIcon
-                    className="h-5 w-5 absolute top-2 right-2 cursor-pointer"
-                    onClick={handleCopyPromptEnhance}
-                  />
-                )}
-                {promptCopyStatus === "success" && (
-                  <CheckCheckIcon className="h-5 w-5 absolute top-2 right-2 text-green-500" />
-                )}
-                {promptCopyStatus === "error" && (
-                  <XIcon className="h-5 w-5 absolute top-2 right-2 text-red-500" />
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="col-span-1 border-l border-gray-200 px-2">
-            <h3 className="text-lg font-semibold mb-4">⚙️ Tools List</h3>
-            <ul className="space-y-2 text-sm">
-              {toolList.map((tool, index) => (
-                <li
-                  onClick={() => handleToolTypeChange(tool.id)}
-                  key={tool.id}
-                  className={`flex items-center ${
-                    toolType === tool.id
-                      ? "bg-gray-200 dark:bg-gray-700"
-                      : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                  } p-2 rounded-md cursor-pointer ${
-                    tool.disable ? "opacity-40 pointer-events-none" : ""
-                  }`}
-                >
-                  <tool.icon
-                    className="h-5 w-5 mr-2"
-                    style={{ color: COLOR_CODE[index % COLOR_CODE.length] }}
-                  />
-                  <span className="font-medium text-ellipsis overflow-hidden whitespace-nowrap">
-                    {tool.title}
-                    {/* {
+                    <tool.icon
+                      className="h-5 w-5 mr-2"
+                      style={{ color: COLOR_CODE[index % COLOR_CODE.length] }}
+                    />
+                    <span className="font-medium text-ellipsis overflow-hidden whitespace-nowrap">
+                      {tool.title}
+                      {/* {
                       tool.isNewFeature && <Badge variant={"secondary"} className="ml-2 pb-1 px-3 text-xs rounded-2xl">New</Badge>
                     } */}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
-
-      </div>
-      
       </DialogContent>
-
     </Dialog>
   );
 }

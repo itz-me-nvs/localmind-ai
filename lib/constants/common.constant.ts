@@ -1,5 +1,6 @@
 // const OLLAMA_BASE_URL = "http://localhost:11434"
 const OLLAMA_BASE_URL = "http://127.0.0.1:11434"
+const DEFAULT_OLLAMA_MODEL = "qwen2.5:0.5b"
 
 const API_ERROR_CODE = {
     // "401": "Unauthorized",
@@ -17,6 +18,12 @@ const API_ERROR_CODE = {
 
     // custom error codes
     "MODEL_NOT_FOUND": 502
+} as const
+
+
+const API_ERROR_MESSAGES = {
+    501: 'Something went wrong!..',
+    502: '"Model not found. Please download a new Large Language Model (LLM) from https://ollama.com."'
 }
 
 const FANCY_COLORS: string[] = [
@@ -31,6 +38,6 @@ const FANCY_COLORS: string[] = [
 
 
 export {
-    API_ERROR_CODE, FANCY_COLORS, OLLAMA_BASE_URL
+    API_ERROR_CODE, API_ERROR_MESSAGES, DEFAULT_OLLAMA_MODEL, FANCY_COLORS, OLLAMA_BASE_URL
 }
 

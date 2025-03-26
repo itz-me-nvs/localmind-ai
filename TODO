@@ -17,6 +17,7 @@ Add to Chat Option in tools.
 Chat UI Issue fixes
 Fussy Search on Recent chats
 Performance & Error handling
+Global Error Monitoring (sentry.io)
 
 # Marketing.
 Project Landing Page.
