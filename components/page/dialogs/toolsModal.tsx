@@ -1615,7 +1615,6 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
                 <div ref={promptEnhancerRef} className="grid w-full gap-2 relative mt-4">
                   {toolType !== 4 && toolType !== 6 && toolType !== 5 ? (
                     <Textarea
-                    
                       rows={1}
                       readOnly
                       value={promptEnhanceResult}

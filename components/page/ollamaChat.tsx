@@ -84,14 +84,38 @@ export default function OllamaChat({
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight]}
                     components={{
-                      code: CodeBlock as any,
-                      pre: CodeBlock as any,
+                      code: ({ node, className, children, ...props }) => {
+                        return <CodeBlock className={`${className} rounded-lg`} {...props}>{children}</CodeBlock>;
+                      }
                     }}
                   >
                     {item.content}
                   </Markdown>
 
-                  
+                //   <Markdown
+                //   components={{
+                //    code({className, children, ...rest}){
+                //     const match = /language-(\w+)/.exec(className || "");
+
+                //     return match ? (
+                //       <SyntaxHighlighter
+                //       {...rest}
+                //       PreTag="div"
+                //       children={String(children).replace(/\n$/, "")}
+                //       language={match[1]}
+                //       style={dark}
+                //       />
+                //     ) : (
+                //       <code className={className} {...rest}>
+                //         {children}
+                //       </code>
+                //     )
+                //    }
+                //   }}
+                 
+                // >
+                //   {item.content}
+                // </Markdown>
                 )}
               </div>
             </div>

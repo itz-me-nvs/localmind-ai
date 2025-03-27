@@ -14,11 +14,12 @@ import {
   OLLAMA_BASE_URL,
 } from "@/lib/constants/common.constant";
 import {
+  ChatHistoryModel,
   ChatModel,
   OllamaAPIChatRequestModel,
   OllamaModelList,
 } from "@/lib/model/chatModel";
-import { addMessage, getMessages } from "@/lib/services/db/indexedDB";
+import { addMessage, getAllMessages } from "@/lib/services/db/indexedDB";
 import {
   selectTheme,
   toggleTheme,
@@ -35,11 +36,13 @@ import {
   SunIcon,
   WrenchIcon
 } from "lucide-react";
+import moment from "moment";
 import Image from "next/image";
-import { redirect, useParams } from "next/navigation";
+import { redirect, useParams, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+
 
 
 export default function ChatPage({ slugParam }: { slugParam: string }) {
@@ -64,20 +67,14 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const placeHolderRef = useRef<HTMLParagraphElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatID, setChatID] = useState("");
+  const [chatHistory, setChatHistory] = useState<ChatHistoryModel[]>([]);
 
   const theme = useAppSelector(selectTheme);
   const dispatch = useAppDispatch();
-  // const router = useRouter();
+
+  const router = useRouter();
   const params = useParams()
   const slug = params.slug as string[] | undefined;
-
-  const chatHistory = [
-    { id: 1, title: "Authentication Implementation", date: "Today" },
-    { id: 2, title: "API Routes Discussion", date: "Yesterday" },
-    { id: 3, title: "Database Setup", date: "2 days ago" },
-  ];
-
-
 
   const MAX_MESSAGES = 5;
   const MAX_TOKEN = 4000;
@@ -89,8 +86,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     if (!slug) {
       console.log("here");
       const chatUid = uuidv4();
-    setChatID(chatUid);
-
+      setChatID(chatUid);
     } else {
       fetchMessages(slug[0]);
       setChatID(slug[0]);
@@ -163,10 +159,24 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       id: 0,
       isError: false,
     },];
-    const loadMessages = await getMessages(chatId);
-    if(loadMessages){
-      console.log("loadMessages", loadMessages);
-      loadMessages.messages.forEach((message: any)=> {
+    const loadAllMessages = await getAllMessages();
+
+    let messageTitles = loadAllMessages.map((item: any)=> {
+      return {
+        id: item.id,
+        title: item.title,
+        date: moment(item.messages ? item.messages[0]?.timestamp : Date.now()).fromNow(),
+      }
+    });
+
+    setChatHistory(messageTitles);
+    console.log("messageTitles", messageTitles);
+    
+
+    const currentChatMessages = loadAllMessages.find(i => i.id === chatId);
+    if(currentChatMessages){
+      console.log("loadMessages", currentChatMessages);
+      currentChatMessages.messages.forEach((message: any)=> {
         const chatMessage = JSON.parse(message.message);
         console.log("chatMessage", chatMessage);
 
@@ -383,7 +393,25 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         }
       ]
 
-      await addMessage(chatID, JSON.stringify(newMessage), "assistant");
+
+      const summarizeResponse = await axios.post(
+        "/api/ollama/generate",
+        {
+          model: selectedModel || "qwen2.5:0.5b",
+          prompt: `Give me a very small title for the following chat history: ${JSON.stringify(result)}`,
+          stream: false,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const responseTitle = summarizeResponse?.data?.response || "";
+        console.log(responseTitle);
+
+      await addMessage(chatID, JSON.stringify(newMessage), responseTitle ?? '', "assistant");
     } catch (error) {
       toast.error("Something went wrong", {
         style: {
@@ -457,6 +485,8 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           <div className="space-y-2">
             {chatHistory.map((chat) => (
               <button
+              onClick={()=> router.push(`/chat/${chat.id}`)}
+              title={chat.title}
                 key={chat.id}
                 className="w-full h-[3rem] flex items-center rounded-lg p-3 text-left hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
               >
@@ -473,7 +503,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                       : "opacity-0 w-0 overflow-hidden"
                   }`}
                 >
-                  <p className="text-sm font-medium text-gray-800">
+                  <p className="text-sm font-medium text-gray-800 overflow-hidden truncate max-w-52">
                     {chat.title}
                   </p>
                   <p className="text-xs text-gray-500">{chat.date}</p>
