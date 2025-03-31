@@ -1,7 +1,8 @@
 import { combineSlices, configureStore } from "@reduxjs/toolkit"
 import { ThemeSlice } from "./features/theme/themeSlice"
+import { UserSlice } from "./features/user/userSlice"
 
-const rootReducer = combineSlices(ThemeSlice)
+const rootReducer = combineSlices(ThemeSlice, UserSlice)
 
 export const makeStore = ()=> {
     return configureStore({

@@ -4,12 +4,12 @@ import React from "react";
 
 const CodeEditor = dynamic(()=> import("@uiw/react-textarea-code-editor").then(mod => mod.default), {ssr: false});
 
-export default function CodeBlock({defaultCode, language, placeholder, readOnly = false,isInput = true, ...props}: {defaultCode?: string, isInput?: boolean, language?: string, placeholder?: string, readOnly?: boolean}) {
+export default function CodeBlock({className, defaultCode, language, placeholder, readOnly = false,isInput = true, ...props}: {className?: string, defaultCode?: string, isInput?: boolean, language?: string, placeholder?: string, readOnly?: boolean}) {
   const [code, setCode] = React.useState(
     `${defaultCode}`
   );
     return (
-     <div className={`"w-full min-h-[100px] ${isInput ? 'max-h-[150px]' : 'max-h-[350px]'} overflow-auto border rounded-lg shadow-sm`}>
+     <div className={`"w-full min-h-[100px] ${isInput ? 'max-h-[150px]' : 'max-h-[350px]'} overflow-auto border rounded-lg shadow-sm ${className}`}>
        <CodeEditor
       value={code}
       language="js"

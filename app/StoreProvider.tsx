@@ -38,7 +38,7 @@ export const StoreProvider = ({ children }: Props) => {
   }, []);
 
   if (!mounted || !storeRef.current)  return (
-      <div className="h-screen flex items-center justify-center bg-background-secondary">
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <div className="animate-spin h-10 w-10 border-4 border-gray-300 rounded-full border-t-blue-500"></div>
       </div>
     );

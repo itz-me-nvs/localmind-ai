@@ -30,6 +30,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { FANCY_COLORS } from "@/lib/constants/common.constant";
 import { ToolDropdownType } from "@/lib/model/toolsModel";
+import { selectModel } from "@/lib/state/features/user/userSlice";
+import { useAppSelector } from "@/lib/state/hooks";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Popover,
@@ -443,6 +445,8 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
 
   const COLOR_CODE = FANCY_COLORS;
 
+    const selectedModel = useAppSelector(selectModel);
+
   // Create separate form instances with unique IDs to prevent field interference
   const promptEnhancerForm = useForm<z.infer<typeof promptEnhanceScheme>>({
     resolver: zodResolver(promptEnhanceScheme),
@@ -584,7 +588,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
         setIsLoading(true);
         setPromptEnhanceResult("");
         const response = await axios.post("/api/ollama/generate", {
-          model: "qwen2.5:0.5b",
+          model: selectedModel,
           prompt: `Improve the clarity, effectiveness, and engagement of the following prompt **without answering it**. Do not provide a response to the prompt itself; just refine its wording for better AI interaction:\n\n"${data.prompt}"`,
           stream: false,
         });
@@ -616,7 +620,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
 
       // Implementation for rewrite enhancement
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3.2:latest", // qwen2.5:0.5b
+        model: selectedModel,
         prompt: `You are a text rewriting assistant. Rewrite the following content with a ${selectedTone} tone and make it ${selectedLength} in length.
       Important: Only provide the rewritten text. Do not include any explanations,
       Original Text: "${data.message}",
@@ -654,7 +658,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
 
       // Implementation for rewrite enhancement
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3.2:latest", // qwen2.5:0.5b
+        model: selectedModel,
         prompt: `Summarize the following text based on the given parameters, Summary Length: ${summaryLength}, Summary Style: ${summaryStyle}, Emphasis: ${summaryEmphasis}.
       Important: Only provide the summary. Do not include any explanations,
       Original Text: "${data.message}",
@@ -700,7 +704,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     **Important:** The AI **must prioritize** syntax issues first before addressing logic errors. If any issue found then return only the corrected code in the same format. Do **NOT** add unnecessary text or explanations beyond the required details. if not bug found then response only like this "No Bug Found"`;
       // Enhanced Bug Fixing Prompt
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3.2:latest", // or any preferred model
+        model: selectedModel, // or any preferred model
         prompt: bugFixPrompt.trim(),
         stream: false,
       });
@@ -742,7 +746,7 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
 
       // Enhanced Bug Fixing Prompt
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3.2:latest", // or any preferred model
+        model: selectedModel, // or any preferred model
         prompt: designUIPrompt.trim(),
         stream: false,
       });
@@ -791,7 +795,7 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
 
       // Enhanced translation prompt
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3.2:latest", // or any preferred model
+        model: selectedModel, // or any preferred model
         prompt: translationPrompt.trim(),
         stream: false,
       });
@@ -834,7 +838,7 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
 
       // Enhanced translation prompt
       const response = await axios.post("/api/ollama/generate", {
-        model: "llama3.2:latest", // or any preferred model
+        model: selectedModel, // or any preferred model
         prompt: translationPrompt.trim(),
         stream: false,
       });

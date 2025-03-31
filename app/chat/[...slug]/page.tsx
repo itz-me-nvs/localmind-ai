@@ -3,12 +3,25 @@
 import ToolsModal from "@/components/page/dialogs/toolsModal";
 import OllamaChat from "@/components/page/ollamaChat";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   API_ERROR_CODE,
   OLLAMA_BASE_URL,
@@ -19,31 +32,43 @@ import {
   OllamaAPIChatRequestModel,
   OllamaModelList,
 } from "@/lib/model/chatModel";
-import { addMessage, getAllMessages } from "@/lib/services/db/indexedDB";
+import {
+  addMessage,
+  getAllMessages,
+  getMessages,
+} from "@/lib/services/db/indexedDB";
 import {
   selectTheme,
   toggleTheme,
 } from "@/lib/state/features/theme/themeSlice";
+import { selectModel, setModel } from "@/lib/state/features/user/userSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/state/hooks";
 // import { addMessage, getMessages } from "@/lib/services/db/indexedDB";
+import "@uiw/react-textarea-code-editor/dist.css";
 import axios, { AxiosError } from "axios";
 import {
   Columns2Icon,
   EarthIcon,
   MessageSquareIcon,
   MoonIcon,
-  PencilLine, SearchIcon,
+  MoreHorizontalIcon,
+  PencilLine,
+  SearchIcon,
   SunIcon,
-  WrenchIcon
+  WrenchIcon,
 } from "lucide-react";
 import moment from "moment";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { redirect, useParams, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-
+const CodeEditor = dynamic(
+  () => import("@uiw/react-textarea-code-editor").then((mod) => mod.default),
+  { ssr: true }
+);
 
 export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [input, setInput] = useState("");
@@ -52,13 +77,13 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [chat, setChat] = useState<ChatModel[]>([
     {
       role: "system",
-      content: "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
+      content:
+        "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
       id: 0,
       isError: false,
     },
   ]);
   const [modelList, setModelList] = useState<OllamaModelList[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>("");
   const [promptModelOpen, setPromptModelOpen] = useState<boolean>(false);
   const [toolModelOpen, setToolModelOpen] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -70,21 +95,21 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [chatHistory, setChatHistory] = useState<ChatHistoryModel[]>([]);
 
   const theme = useAppSelector(selectTheme);
+  const selectedModel = useAppSelector(selectModel);
+
   const dispatch = useAppDispatch();
 
   const router = useRouter();
-  const params = useParams()
+  const params = useParams();
   const slug = params.slug as string[] | undefined;
 
   const MAX_MESSAGES = 5;
   const MAX_TOKEN = 4000;
 
   useEffect(() => {
-    // if(params.slug)
-    console.log("slug", slug);
+    sidebarChatHistory();
 
     if (!slug) {
-      console.log("here");
       const chatUid = uuidv4();
       setChatID(chatUid);
     } else {
@@ -152,35 +177,43 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   //   }
   // }, [promptModelOpen]);
 
-  const fetchMessages = async (chatId: string) => {
-    let updatedChats: ChatModel[] = [{
-      role: "system",
-      content: "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
-      id: 0,
-      isError: false,
-    },];
+  const sidebarChatHistory = async () => {
     const loadAllMessages = await getAllMessages();
 
-    let messageTitles = loadAllMessages.map((item: any)=> {
+    let messageTitles = loadAllMessages.map((item: any) => {
       return {
         id: item.id,
         title: item.title,
-        date: moment(item.messages ? item.messages[0]?.timestamp : Date.now()).fromNow(),
-      }
+        dateInFormat: moment(
+          item.messages ? item.messages[0]?.timestamp : Date.now()
+        ).fromNow(),
+        date: item.messages ? item.messages[0]?.timestamp : Date.now(),
+      };
     });
 
-    setChatHistory(messageTitles);
+    setChatHistory(messageTitles.sort((a, b) => b.date - a.date));
     console.log("messageTitles", messageTitles);
-    
+  };
 
-    const currentChatMessages = loadAllMessages.find(i => i.id === chatId);
-    if(currentChatMessages){
+  const fetchMessages = async (chatId: string) => {
+    let updatedChats: ChatModel[] = [
+      {
+        role: "system",
+        content:
+          "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
+        id: 0,
+        isError: false,
+      },
+    ];
+
+    const currentChatMessages = await getMessages(chatId);
+    if (currentChatMessages) {
       console.log("loadMessages", currentChatMessages);
-      currentChatMessages.messages.forEach((message: any)=> {
+      currentChatMessages.messages.forEach((message: any) => {
         const chatMessage = JSON.parse(message.message);
         console.log("chatMessage", chatMessage);
 
-        if(chatMessage && chatMessage.length > 0){
+        if (chatMessage && chatMessage.length > 0) {
           setIsSubmitted(true);
 
           chatMessage.forEach((item: ChatModel) => {
@@ -188,13 +221,13 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
               id: updatedChats.length + 1,
               content: item.content,
               isError: false,
-              role: item.role
-            })
+              role: item.role,
+            });
           });
 
           setChat(updatedChats);
         }
-      })
+      });
     }
   };
 
@@ -216,7 +249,9 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   };
 
   const handleModelChange = (name: string) => {
-    setSelectedModel(name);
+    console.log("name", name);
+
+    dispatch(setModel(name));
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -384,21 +419,22 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
       const newMessage = [
         {
-          role: 'user',
-          content: input
+          role: "user",
+          content: input,
         },
         {
-          role: 'assistant',
-          content: result
-        }
-      ]
-
+          role: "assistant",
+          content: result,
+        },
+      ];
 
       const summarizeResponse = await axios.post(
         "/api/ollama/generate",
         {
           model: selectedModel || "qwen2.5:0.5b",
-          prompt: `Give me a very small title for the following chat history: ${JSON.stringify(result)}`,
+          prompt: `Give me a very small title for the following chat history: ${JSON.stringify(
+            result
+          )}`,
           stream: false,
         },
         {
@@ -409,9 +445,14 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       );
 
       const responseTitle = summarizeResponse?.data?.response || "";
-        console.log(responseTitle);
+      console.log(responseTitle);
 
-      await addMessage(chatID, JSON.stringify(newMessage), responseTitle ?? '', "assistant");
+      await addMessage(
+        chatID,
+        JSON.stringify(newMessage),
+        responseTitle ?? "",
+        "assistant"
+      );
     } catch (error) {
       toast.error("Something went wrong", {
         style: {
@@ -427,21 +468,73 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     dispatch(toggleTheme(theme));
   };
 
+  const navigateToChat = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    id: string
+  ) => {
+    e.preventDefault();
+    router.push(`/chat/${id}`);
+  };
+
+  const chatMoreOptionHandler = (
+    e: React.MouseEvent<HTMLDivElement>,
+    id: string
+  ) => {
+    e.stopPropagation();
+    console.log("id", id);
+  };
+
+  const handleDeleteChat = async (
+    e: React.MouseEvent<HTMLDivElement>,
+    id: string
+  ) => {
+    e.stopPropagation();
+    console.log("id", id);
+    // await deleteChat(id);
+  };
+
   return (
-    <div
-      className={`h-screen mb-3 text-gray-900 dark:text-gray-100 overflow-hidden`}
-    >
-      <header className="flex justify-between items-center fixed top-[20px] right-[20px]">
-        <div className="flex items-center space-x-3">
+    <div className="h-screen mb-3 text-gray-900 dark:text-gray-100 overflow-hidden bg-gray-100 dark:bg-gray-900">
+      {/* Header */}
+      <header
+        className={`flex justify-between items-center sticky top-5 right-5 z-10`}
+      >
+        <div className="flex items-center">
+          <div
+            className={`text-2xl font-bold transition-all duration-500 ${
+              sidebarOpen ? "pl-[calc(18rem+20px)]" : "pl-[calc(5rem+20px)]"
+            }`}
+          >
+            LocalMind AI
+          </div>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild className="ml-2">
+                <button
+                  className="h-10 px-3 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all"
+                  onClick={() => router.push("/", { scroll: false })}
+                >
+                  <PencilLine className="h-6 w-6 cursor-pointer text-gray-700 dark:text-gray-300" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>New chat</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        <div className="flex items-center space-x-3 pr-5">
           <Select
             onValueChange={(value) => handleModelChange(value)}
-            defaultValue="qwen2.5:0.5b"
+            defaultValue={selectedModel}
           >
-            <SelectTrigger className="w-[180px]  focus:ring-0 dark:border-background-message dark:border">
+            <SelectTrigger className="w-[180px] focus:ring-0 border-gray-300 dark:border-gray-700 dark:bg-gray-800">
               <SelectValue placeholder="Models" />
             </SelectTrigger>
-            <SelectContent>
-              {modelList.map((item, index) => (
+            <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+              {modelList.map((item) => (
                 <SelectItem key={item.id} value={item.model}>
                   {item.model}
                 </SelectItem>
@@ -453,47 +546,42 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 h-full left-0 z-40 flex flex-col shadow-xl bg-sidebar-surface-primary transition-all duration-300 ease-in-out ${
-          sidebarOpen ? "w-72" : "w-20"
-        } overflow-hidden`}
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col shadow-xl bg-gray-100 dark:bg-gray-800 transition-all duration-300 ease-in-out
+      ${sidebarOpen ? "w-72" : "w-20"} overflow-hidden`}
       >
         {/* Top Section */}
-        <div className="flex h-16 items-center justify-between border-b px-4">
-          {/* Sidebar Toggle Button */}
+        <div className="flex h-16 items-center justify-between border-b border-gray-300 dark:border-gray-700 px-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="h-10 px-2 hover:bg-token-surface-hover rounded-lg transition-all"
+            className="h-10 px-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all"
           >
-            <Columns2Icon className="h-6 w-6 cursor-pointer" />
+            <Columns2Icon className="h-6 w-6 cursor-pointer text-gray-700 dark:text-gray-300" />
           </button>
 
           {/* Icons Only Show When Sidebar is Open */}
           {sidebarOpen && (
             <div className="flex items-center space-x-2">
-              <button className="h-10 px-3 hover:bg-token-surface-hover rounded-lg transition-all">
-                <SearchIcon className="h-6 w-6 cursor-pointer" />
-              </button>
-              <button className="h-10 px-3 hover:bg-token-surface-hover rounded-lg transition-all">
-                <PencilLine className="h-6 w-6 cursor-pointer" />
+              <button className="h-10 px-3 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all">
+                <SearchIcon className="h-6 w-6 cursor-pointer text-gray-700 dark:text-gray-300" />
               </button>
             </div>
           )}
         </div>
 
         {/* Sidebar Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 overflow-x-hidden">
           <div className="space-y-2">
             {chatHistory.map((chat) => (
               <button
-              onClick={()=> router.push(`/chat/${chat.id}`)}
-              title={chat.title}
+                onClick={(e) => navigateToChat(e, chat.id)}
+                title={chat.title}
                 key={chat.id}
-                className="w-full h-[3rem] flex items-center rounded-lg p-3 text-left hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+                className={`w-full h-[3rem] group relative flex items-center rounded-lg p-3 text-left ${
+                  chat.id == chatID ? "bg-gray-200 dark:bg-gray-700" : ""
+                } hover:bg-gray-200 dark:hover:bg-gray-700 transition-all`}
               >
                 {/* Icon Always Visible */}
-                <MessageSquareIcon
-                  className={`text-gray-500 h-5 w-5 shrink-0 `}
-                />
+                <MessageSquareIcon className="text-gray-500 dark:text-gray-400 h-5 w-5 shrink-0" />
 
                 {/* Text Appears Only When Sidebar is Open */}
                 <div
@@ -503,45 +591,80 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                       : "opacity-0 w-0 overflow-hidden"
                   }`}
                 >
-                  <p className="text-sm font-medium text-gray-800 overflow-hidden truncate max-w-52">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100 overflow-hidden whitespace-nowrap max-w-44">
                     {chat.title}
                   </p>
-                  <p className="text-xs text-gray-500">{chat.date}</p>
+
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {chat.dateInFormat}
+                  </p>
                 </div>
+
+                {sidebarOpen && (
+                  <div
+                    onClick={(e) => chatMoreOptionHandler(e, chat.id)}
+                    className={`absolute right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-100`}
+                  >
+                    <DropdownMenu>
+                      {/* Wrap the trigger inside a div to avoid <button> nesting issues */}
+                      <div>
+                        <DropdownMenuTrigger asChild>
+                          <MoreHorizontalIcon className="h-6 w-6 cursor-pointer text-gray-700 dark:text-gray-300" />
+                        </DropdownMenuTrigger>
+                      </div>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem>Share</DropdownMenuItem>
+                        <DropdownMenuItem>Rename</DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => handleDeleteChat(e, chat.id)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
               </button>
             ))}
           </div>
         </div>
 
-
-        <div className="flex justify-center pb-4">
-        <button onClick={togglePageTheme}>
-          {
-            theme == 'dark' ? (<SunIcon className="h-6 w-6 cursor-pointer" />) : (
-              <MoonIcon className="h-6 w-6 cursor-pointer" />
-            )
-          }
-        </button>
+        {/* Theme Toggle */}
+        <div className="flex justify-start items-center px-7 pb-4">
+          <button onClick={togglePageTheme}>
+            {theme === "dark" ? (
+              <SunIcon className="h-6 w-6 cursor-pointer text-gray-700 dark:text-gray-300" />
+            ) : (
+              <MoonIcon className="h-6 w-6 cursor-pointer text-gray-700 dark:text-gray-300" />
+            )}
+          </button>
+          <p
+            className={`ml-3 text-sm font-medium text-gray-800 dark:text-gray-100 transition-opacity duration-100 truncate ${
+              sidebarOpen ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {theme === "dark" ? "Dark Mode" : "Light Mode"}
+          </p>
         </div>
-
-
       </aside>
 
+      {/* Main Content */}
       <main
-        className={`relative flex bg-red ${
+        className={`relative flex ${
           isSubmitted
             ? "justify-start min-h-[80vh] mt-20"
             : "justify-center min-h-screen"
-        } items-center h-full flex-col transition-all ${
-          isSubmitted && sidebarOpen ? "ml-72" : "ml-20"
-        }`}
+        }
+      items-center h-full flex-col transition-transform ${
+        sidebarOpen && isSubmitted ? "ml-72" : "ml-20"
+      } `}
       >
         {isSubmitted ? (
           <OllamaChat chatList={chat} isLoading={isLoading} />
         ) : (
           <div className="flex items-center justify-center p-2 rounded-lg">
             <Image
-              src="/logo/logo.svg" // Ensure the correct path is set
+              src="/logo/logo.svg"
               alt="Ollama UI"
               width={150}
               height={150}
@@ -550,33 +673,28 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         )}
       </main>
 
+      {/* Form Input */}
       <form
         onSubmit={handleSubmit}
         ref={inputContainerRef}
-        className={`${
-          isSubmitted ? "top-[90%]" : "top-[70%]"
-        } -translate-y-1/2 p-3 absolute transition-all duration-300 m-auto -translate-x-1/2 left-1/2 flex flex-col border border-gray-300 dark:border-gray-900 shadow-lg rounded-lg bg-background max-w-screen-md w-full`}
+        className={`p-3 fixed bottom-4 transition-all duration-300 m-auto left-1/2 flex flex-col
+        border border-gray-300 dark:border-gray-700 shadow-lg rounded-lg bg-white dark:bg-gray-800 w-full max-w-screen-md
+        ${sidebarOpen ? "translate-x-[calc(-50%+9rem)]" : "-translate-x-1/2"}
+        ${!isSubmitted ? "lg:-translate-y-44" : ""}`}
       >
-        <div
-          contentEditable={true}
-          translate="no"
-          onInput={handleInputChange}
-          onKeyDown={handleKeyDown}
-          suppressContentEditableWarning={true}
-          className="group flex items-center ProseMirror border-none focus-visible:ring-0 focus:outline-none break-words overflow-auto min-h-[44px] max-h-32"
-          id="prompt-textarea"
-          data-virtualkeyboard="true"
-        >
-          <p
-            ref={placeHolderRef}
-            className="whitespace-pre-wrap text-gray-500 empty:before:content-[attr(data-placeholder)] dark:text-gray-400 placeholder ml-[10px]"
-            data-placeholder="Ask a question"
-          ></p>
-        </div>
+        <Textarea
+          onInput={handleInputChange as any}
+          onKeyDown={handleKeyDown as any}
+          className="group flex items-center text-xl border-none focus-visible:ring-0 shadow-none focus:outline-none break-words resize-none overflow-auto min-h-[44px] max-h-32 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
+          placeholder="Ask a question"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
 
         <div className="flex justify-between items-center mt-3 px-2">
           <div className="flex items-center gap-3">
-            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary"
+            <div
+              className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
               onClick={() => setToolModelOpen(true)}
             >
               <WrenchIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
@@ -590,8 +708,8 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           </div>
         </div>
       </form>
-<ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen}
-     />
+
+      <ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen} />
     </div>
   );
 }

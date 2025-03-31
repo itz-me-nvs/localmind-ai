@@ -19,5 +19,6 @@ export interface OllamaAPIChatRequestModel {
 export interface ChatHistoryModel {
     id: string;
     title: string;
+    dateInFormat: string;
     date: string;
 }

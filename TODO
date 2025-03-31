@@ -1,18 +1,10 @@
-1. UI Issues. ✅
-2. Memory Context. ✅
-3. Summarize the Memory to reduce token usage. ✅
-4. Contextual Prompt
-  a. Response based tool suggestion. ❌
-  b. Prompt Enhancer.✅
-  c. Tool Section.
-  d. React Form hook.✅
-Storage in IndexedDB + unique id based chat route. ✅
-Redux State Management.✅
 
 
 # thing to do
 stream tool section API calls(Common Stream Code).
 Sidebar for Recent Chats.
+Chat Delete Option + UI
+Chat History (Chat Memory)
 Add to Chat Option in tools.
 Fussy Search on Recent chats
 Performance & Error handling
@@ -20,8 +12,8 @@ Global Error Monitoring (sentry.io)
 
 ####
 Chat UI Issue fixes.
-Selected Model from redux.
-Theme Based issue
+Selected Model from redux.✅
+Theme Based issue. ✅
 
 # Marketing.
 Project Landing Page.
