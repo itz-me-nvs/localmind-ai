@@ -38,6 +38,7 @@ import {
   clearMessages,
   getAllMessages,
   getMessages,
+  renameChat,
 } from "@/lib/services/db/indexedDB";
 import {
   selectTheme,
@@ -521,7 +522,43 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     }));
 
     // focus into the input
-    renameInputsRef.current[index].focus();
+     // Focus input after state updates
+  setTimeout(() => {
+    renameInputsRef.current[index]?.focus();
+  }, 10); // Small delay to ensure the input is visible
+  }
+
+  const onBlurChatInput = (e: React.FocusEvent<HTMLInputElement>, chatIndex: number)=> {
+    console.log("blur", e);
+    
+    setChatHistory((prev)=> prev.map((item, index) => {
+      if(chatIndex == index){
+        item.dataClosed = true
+
+        if(item.title != renameInputsRef.current[chatIndex].value){
+          item.title = renameInputsRef.current[chatIndex].value || item.title || item.title;
+        }
+      }
+      return item;
+    }))
+  }
+
+  const chatRenameInputOnEnter = async(e: React.KeyboardEvent<HTMLInputElement>, chatIndex: number, chatId: string)=> {    
+    if(e.key == 'Enter'){
+      if(renameInputsRef.current[chatIndex]){
+        let chatTitle = ''
+        setChatHistory((prev)=> prev.map((item, index) => {
+          if(chatIndex == index){
+            item.title = renameInputsRef.current[chatIndex].value || item.title;
+            chatTitle = item.title;
+            item.dataClosed = true;
+          }
+          return item;
+        }))
+
+        await renameChat(chatId, chatTitle)
+      }
+    }
   }
 
   return (
@@ -630,14 +667,20 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
                   <input
                  ref={(element: any) => renameInputsRef.current[index] = element}
-                  className="text-sm font-medium bg-transparent block focus:bg-red-400 focus-visible:bg-red-200 data-[state=open]:block data-[state=closed]:opacity-0 data-[state=closed]:w-0 data-[state=closed]:h-0 text-gray-800 dark:text-gray-100 overflow-hidden whitespace-nowrap max-w-44"
+                  className="text-sm font-medium bg-transparent block h-auto data-[state=open]:block data-[state=closed]:hidden data-[state=open]:opacity-1 rounded-sm p-1 focus:outline-none focus:border-blue-500 focus:border text-gray-800 dark:text-gray-100 overflow-hidden whitespace-nowrap max-w-44"
                   defaultValue={chat.title || ''}
                   data-state={chat.dataClosed ? 'closed' : 'open'}
                     type="text"
+                    onClick={(e)=> {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    onBlur={(e)=> onBlurChatInput(e, index)}
+                    onKeyDown={(e)=> chatRenameInputOnEnter(e, index, chat.id)}
                     />
 
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {chat.dateInFormat} - {renameInputsRef.current[index] && renameInputsRef.current[index].getAttribute('data-state') }
+                    {chat.dateInFormat} - {chat.dataClosed ? 'Closed' : 'Open'}
                   </p>
                 </div>
 
