@@ -55,6 +55,17 @@ export const getAllMessages = async()=> {
     return await store.getAll();
 }
 
+export const renameChat = async(chatId: string, title: string)=> {
+    const db = await dbPromise;
+    const store = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME);
+    const currentChat = await store.get(chatId);
+
+    if(currentChat){
+        currentChat.title = title;
+        store.put(currentChat);
+    }
+}
+
 export const clearMessages = async(chatId: string)=> {
     const db = await dbPromise;
     const store = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME);

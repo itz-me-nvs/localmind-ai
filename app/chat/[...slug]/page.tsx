@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   API_ERROR_CODE,
+  API_ERROR_MESSAGES,
   OLLAMA_BASE_URL,
 } from "@/lib/constants/common.constant";
 import {
@@ -34,6 +35,7 @@ import {
 } from "@/lib/model/chatModel";
 import {
   addMessage,
+  clearMessages,
   getAllMessages,
   getMessages,
 } from "@/lib/services/db/indexedDB";
@@ -90,6 +92,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
   const inputContainerRef = useRef<HTMLFormElement>(null);
   const placeHolderRef = useRef<HTMLParagraphElement>(null);
+  const renameInputsRef = useRef<HTMLInputElement[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatID, setChatID] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatHistoryModel[]>([]);
@@ -188,6 +191,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           item.messages ? item.messages[0]?.timestamp : Date.now()
         ).fromNow(),
         date: item.messages ? item.messages[0]?.timestamp : Date.now(),
+        dataClosed: true,
       };
     });
 
@@ -488,10 +492,37 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     e: React.MouseEvent<HTMLDivElement>,
     id: string
   ) => {
-    e.stopPropagation();
+    try {
+      e.stopPropagation();
     console.log("id", id);
-    // await deleteChat(id);
+    await clearMessages(id);
+
+    const filteredChat = chatHistory.filter(i => i.id != id);
+    setChatHistory(filteredChat);
+    toast.success('Chat deleted successfully');
+    } catch (error) {
+      toast.error(API_ERROR_MESSAGES[501])
+    }
   };
+
+  const onChatTitleFocus = (e: React.FocusEvent<HTMLInputElement>, id: string)=> {
+    console.log("event", e);
+    
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleChatRename = async (e: React.MouseEvent<HTMLDivElement>, index: number) => {
+    setChatHistory((prev) => prev.map((item, i) => {
+      if(i == index) {
+        item.dataClosed = false
+      }
+      return item
+    }));
+
+    // focus into the input
+    renameInputsRef.current[index].focus();
+  }
 
   return (
     <div className="h-screen mb-3 text-gray-900 dark:text-gray-100 overflow-hidden bg-gray-100 dark:bg-gray-900">
@@ -571,7 +602,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         {/* Sidebar Content */}
         <div className="flex-1 overflow-y-auto p-4 overflow-x-hidden">
           <div className="space-y-2">
-            {chatHistory.map((chat) => (
+            {chatHistory.map((chat, index) => (
               <button
                 onClick={(e) => navigateToChat(e, chat.id)}
                 title={chat.title}
@@ -591,12 +622,22 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                       : "opacity-0 w-0 overflow-hidden"
                   }`}
                 >
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100 overflow-hidden whitespace-nowrap max-w-44">
-                    {chat.title}
-                  </p>
+                 {
+                   chat.dataClosed && <p className={`text-sm font-medium text-gray-800 dark:text-gray-100 overflow-hidden whitespace-nowrap max-w-44`}>
+                   {chat.title}
+                 </p>
+                 }
+
+                  <input
+                 ref={(element: any) => renameInputsRef.current[index] = element}
+                  className="text-sm font-medium bg-transparent block focus:bg-red-400 focus-visible:bg-red-200 data-[state=open]:block data-[state=closed]:opacity-0 data-[state=closed]:w-0 data-[state=closed]:h-0 text-gray-800 dark:text-gray-100 overflow-hidden whitespace-nowrap max-w-44"
+                  defaultValue={chat.title || ''}
+                  data-state={chat.dataClosed ? 'closed' : 'open'}
+                    type="text"
+                    />
 
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {chat.dateInFormat}
+                    {chat.dateInFormat} - {renameInputsRef.current[index] && renameInputsRef.current[index].getAttribute('data-state') }
                   </p>
                 </div>
 
@@ -612,10 +653,11 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                           <MoreHorizontalIcon className="h-6 w-6 cursor-pointer text-gray-700 dark:text-gray-300" />
                         </DropdownMenuTrigger>
                       </div>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem>Share</DropdownMenuItem>
-                        <DropdownMenuItem>Rename</DropdownMenuItem>
+                      <DropdownMenuContent className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-lg">
+                        <DropdownMenuItem className="cursor-pointer">Share</DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer" onClick={(e) => handleChatRename(e, index)}>Rename</DropdownMenuItem>
                         <DropdownMenuItem
+                        className="cursor-pointer"
                           onClick={(e) => handleDeleteChat(e, chat.id)}
                         >
                           Delete

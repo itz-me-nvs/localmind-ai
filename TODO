@@ -5,6 +5,7 @@ stream tool section API calls(Common Stream Code).
 Sidebar for Recent Chats.
 Chat Delete Option + UI
 Chat History (Chat Memory)
+Chat Share Option
 Add to Chat Option in tools.
 Fussy Search on Recent chats
 Performance & Error handling

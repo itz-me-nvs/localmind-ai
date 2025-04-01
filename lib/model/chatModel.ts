@@ -21,4 +21,5 @@ export interface ChatHistoryModel {
     title: string;
     dateInFormat: string;
     date: string;
+    dataClosed: boolean
 }
