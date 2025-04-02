@@ -4,11 +4,13 @@ import { createAppSlice } from "../../createAppSlice";
 interface userSliceModel {
     model: string,
     status: "idle" | "pending" | "error",
+    keepMemory: boolean
 }
 
 const userSliceInitialState: userSliceModel = {
     status: "idle",
-    model: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).model : 'qwen2.5:0.5b' : 'qwen2.5:0.5b'
+    model: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).model : 'qwen2.5:0.5b' : 'qwen2.5:0.5b',
+    keepMemory: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).keepMemory : false : false
 }
 
 
