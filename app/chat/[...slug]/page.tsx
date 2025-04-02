@@ -2,12 +2,14 @@
 
 import ToolsModal from "@/components/page/dialogs/toolsModal";
 import OllamaChat from "@/components/page/ollamaChat";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -15,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -46,6 +49,7 @@ import {
 } from "@/lib/state/features/theme/themeSlice";
 import { selectModel, setModel } from "@/lib/state/features/user/userSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/state/hooks";
+import { formatBytes } from "@/lib/utils";
 // import { addMessage, getMessages } from "@/lib/services/db/indexedDB";
 import "@uiw/react-textarea-code-editor/dist.css";
 import axios, { AxiosError } from "axios";
@@ -56,9 +60,8 @@ import {
   MoonIcon,
   MoreHorizontalIcon,
   PencilLine,
-  SearchIcon,
-  SunIcon,
-  WrenchIcon,
+  SearchIcon, SettingsIcon,
+  SunIcon, WrenchIcon
 } from "lucide-react";
 import moment from "moment";
 import dynamic from "next/dynamic";
@@ -97,6 +100,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatID, setChatID] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatHistoryModel[]>([]);
+  const [keepChat, setKeepChat] = useState(true);
 
   const theme = useAppSelector(selectTheme);
   const selectedModel = useAppSelector(selectModel);
@@ -305,7 +309,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         const response = await axios.post(
           "/api/ollama/generate",
           {
-            model: selectedModel || "qwen2.5:0.5b",
+            model: selectedModel,
             prompt: `Summarize the following chat history: ${content}`,
             stream: false,
           },
@@ -340,11 +344,11 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     let messages: OllamaAPIChatRequestModel[] = [];
     let chatSummary = "";
 
-    // chatSummary = await summarizeChatHistory();
+    chatSummary = await summarizeChatHistory();
     messages = [
       {
         role: "system",
-        content: `Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.`,
+        content: `Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information. Here is the summary of previous chat ${chatSummary}`,
       },
       {
         role: "user",
@@ -594,6 +598,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         </div>
 
         <div className="flex items-center space-x-3 pr-5">
+          <div className="flex items-center gap-2">
           <Select
             onValueChange={(value) => handleModelChange(value)}
             defaultValue={selectedModel}
@@ -604,11 +609,17 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
             <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
               {modelList.map((item) => (
                 <SelectItem key={item.id} value={item.model}>
-                  {item.model}
+                 <div className="flex justify-between items-center w-full">
+          <span>{item.model}</span>
+          <Badge className="ml-2 bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600">{formatBytes(item.size)}</Badge> 
+        </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+
+          <SettingsIcon className="ml-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300" />
+          </div>
         </div>
       </header>
 
@@ -777,6 +788,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         />
 
         <div className="flex justify-between items-center mt-3 px-2">
+          <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
             <div
               className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
@@ -790,6 +802,26 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
               <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               <span className="text-gray-700 dark:text-gray-300">Search</span>
             </div>
+
+            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary opacity-70 pointer-events-none">
+              <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              <span className="text-gray-700 dark:text-gray-300">Fine tune</span>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+  <Switch
+    id="airplane-mode"
+    checked={keepChat}
+    onCheckedChange={(checked)=> {
+      setKeepChat(checked);
+    } }
+    className="data-[state=checked]:bg-blue-500 data-[state=checked]:dark:bg-blue-500 bg-gray-300 dark:bg-gray-700 transition-colors"
+  />
+  <Label htmlFor="airplane-mode">Keep chat memory</Label>
+</div>
+
+
           </div>
         </div>
       </form>

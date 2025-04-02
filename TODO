@@ -4,6 +4,7 @@
 stream tool section API calls(Common Stream Code).
 Sidebar for Recent Chats.
 Chat Delete Option + UI
+Chat Retry + Prev chat seek option.
 Chat History (Chat Memory)
 Chat Share Option
 Add to Chat Option in tools.
@@ -15,6 +16,10 @@ Global Error Monitoring (sentry.io)
 Chat UI Issue fixes.
 Selected Model from redux.✅
 Theme Based issue. ✅
+
+# Environment
+Run ollama with docker container
+Pull models from it.
 
 # Marketing.
 Project Landing Page.

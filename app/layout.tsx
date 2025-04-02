@@ -21,8 +21,8 @@ const geistMono = Geist_Mono({
 
 // Define metadata for the application (title and description)
 export const metadata: Metadata = {
-  title: "Ollama UI",
-  description: "A UI library for Ollama",
+  title: "LocalMind AI",
+  description: "Local AI for better developer experience(dx)",
 };
 
 export default function RootLayout({
