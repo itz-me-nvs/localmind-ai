@@ -10,8 +10,13 @@ interface userSliceModel {
 const userSliceInitialState: userSliceModel = {
     status: "idle",
     model: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).model : 'qwen2.5:0.5b' : 'qwen2.5:0.5b',
-    keepMemory: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).keepMemory : false : false
+    keepMemory: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).keepMemory : true : true
 }
+
+// typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).keepMemory || true : true : true
+
+console.log("userSliceInitialState", userSliceInitialState);
+
 
 
 export const UserSlice = createAppSlice({
@@ -36,17 +41,30 @@ export const UserSlice = createAppSlice({
             }));
          }
 
+        }),
+        setKeepChatMemory: create.reducer((state, actions: PayloadAction<boolean>) => {
+            state.keepMemory = actions.payload;
+
+            const userStored = localStorage.getItem('user');
+            if (userStored) {
+               let updatedVal = JSON.parse(userStored);
+               updatedVal.keepMemory = actions.payload;
+               localStorage.setItem('user', JSON.stringify(updatedVal));
+            }
+            else {
+               localStorage.setItem('user', JSON.stringify({
+                   keepMemory: actions.payload
+               }));
+            }
         })
     }),
     selectors: {
-        selectModel: (selector) => {
-            console.log("selector", selector);
-            return selector.model
-        }
+        selectModel: (selector) => selector.model,
+        selectKeepChatMemory: (selector) => selector.keepMemory
     }
 })
 
-export const {setModel} = UserSlice.actions;
-export const {selectModel} = UserSlice.selectors;
+export const {setModel, setKeepChatMemory} = UserSlice.actions;
+export const {selectModel, selectKeepChatMemory} = UserSlice.selectors;
 
 export default UserSlice.reducer;
