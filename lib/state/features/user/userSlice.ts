@@ -12,7 +12,6 @@ const userSliceInitialState: userSliceModel = {
     model: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).model : 'qwen2.5:0.5b' : 'qwen2.5:0.5b',
     keepMemory: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).keepMemory : true : true
 }
-
 export const UserSlice = createAppSlice({
     name: "user",
     initialState: userSliceInitialState,
