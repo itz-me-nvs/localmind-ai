@@ -17,7 +17,7 @@ Chat UI Issue fixes.
 Selected Model from redux.✅
 Theme Based issue. ✅
 
-# Environment
+# Environment & deployment
 Run ollama with docker container
 Pull models from it.
 
