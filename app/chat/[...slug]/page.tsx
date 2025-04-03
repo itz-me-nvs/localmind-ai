@@ -47,7 +47,7 @@ import {
   selectTheme,
   toggleTheme,
 } from "@/lib/state/features/theme/themeSlice";
-import { selectModel, setModel } from "@/lib/state/features/user/userSlice";
+import { selectKeepChatMemory, selectModel, setKeepChatMemory, setModel } from "@/lib/state/features/user/userSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/state/hooks";
 import { formatBytes } from "@/lib/utils";
 // import { addMessage, getMessages } from "@/lib/services/db/indexedDB";
@@ -104,6 +104,9 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
   const theme = useAppSelector(selectTheme);
   const selectedModel = useAppSelector(selectModel);
+  const keepChatMemory = useAppSelector(selectKeepChatMemory);
+  console.log("keepChatMemory", keepChatMemory);
+  
 
   const dispatch = useAppDispatch();
 
@@ -124,6 +127,9 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       fetchMessages(slug[0]);
       setChatID(slug[0]);
     }
+
+    // update chat memory state.
+    setKeepChat(keepChatMemory);
   }, []);
 
   useEffect(() => {
@@ -603,7 +609,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
             onValueChange={(value) => handleModelChange(value)}
             defaultValue={selectedModel}
           >
-            <SelectTrigger className="w-[180px] focus:ring-0 border-gray-300 dark:border-gray-700 dark:bg-gray-800">
+            <SelectTrigger className="w-[220px] focus:ring-0 border-gray-300 dark:border-gray-700 dark:bg-gray-800">
               <SelectValue placeholder="Models" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
@@ -611,7 +617,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                 <SelectItem key={item.id} value={item.model}>
                  <div className="flex justify-between items-center w-full">
           <span>{item.model}</span>
-          <Badge className="ml-2 bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600">{formatBytes(item.size)}</Badge> 
+          <Badge className="ml-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">{formatBytes(item.size)}</Badge> 
         </div>
                 </SelectItem>
               ))}
@@ -815,6 +821,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     checked={keepChat}
     onCheckedChange={(checked)=> {
       setKeepChat(checked);
+      dispatch(setKeepChatMemory(checked));
     } }
     className="data-[state=checked]:bg-blue-500 data-[state=checked]:dark:bg-blue-500 bg-gray-300 dark:bg-gray-700 transition-colors"
   />
