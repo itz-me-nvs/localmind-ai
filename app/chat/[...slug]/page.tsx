@@ -139,7 +139,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
         const data = response.data;
 
-        let modelArr: OllamaModelList[] = [];
+        const modelArr: OllamaModelList[] = [];
 
         if (data?.models) {
           data?.models.forEach((model: OllamaModelList) => {
@@ -188,7 +188,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const sidebarChatHistory = async () => {
     const loadAllMessages = await getAllMessages();
 
-    let messageTitles = loadAllMessages.map((item: any) => {
+    const messageTitles = loadAllMessages.map((item: any) => {
       return {
         id: item.id,
         title: item.title,
@@ -205,7 +205,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   };
 
   const fetchMessages = async (chatId: string) => {
-    let updatedChats: ChatModel[] = [
+    const updatedChats: ChatModel[] = [
       {
         role: "system",
         content:
@@ -301,7 +301,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   ): Promise<string> => {
     try {
       if (chat.length > 1) {
-        let content = chat
+        const content = chat
           .slice(1, -MAX_MESSAGES)
           .map((item: ChatModel) => `${item.role}: ${item.content}`)
           .join(" ");

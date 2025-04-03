@@ -548,9 +548,7 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
   // scroll to the prompt enhancer on submit
 
   useEffect(() => {
-    let animationFrameId: number;
-    animationFrameId = requestAnimationFrame(promptEnhancerScroll);
-
+    const animationFrameId: number = requestAnimationFrame(promptEnhancerScroll);
     return ()=> {
       cancelAnimationFrame(animationFrameId);
     }

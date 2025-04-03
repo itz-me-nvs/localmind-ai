@@ -20,7 +20,7 @@ export async function GET() {
     console.log("status", status);
     
     return NextResponse.json(data, { status: API_ERROR_CODE.SUCCESS });
-  } catch (error) {
+  } catch (_) {
     // Check if ollama is running
     const { stdout, stderr } = await execPromise("ollama").catch((err) => ({
       stdout: "",

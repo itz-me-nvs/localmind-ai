@@ -26,7 +26,7 @@ export const UserSlice = createAppSlice({
          // update localStorage of model
          const userStored = localStorage.getItem('user');
          if (userStored) {
-            let updatedVal = JSON.parse(userStored);
+            const updatedVal = JSON.parse(userStored);
             updatedVal.model = actions.payload;
             localStorage.setItem('user', JSON.stringify(updatedVal));
          }

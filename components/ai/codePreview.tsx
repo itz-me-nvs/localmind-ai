@@ -27,7 +27,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ code }) => {
             if (document) {
                 document.open();
 
-                let html = extractHTML(code);
+                const html = extractHTML(code);
                 
                 if (html) {
                     setSrcDoc(html);
@@ -66,7 +66,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ code }) => {
             const formattedCode = response?.data?.response || "";
             setIsFormating(false);
       
-            let html = extractHTML(code);
+            const html = extractHTML(code);
             if(html){
                 setSrcDoc(formattedCode);
                 setIsPreviewAvailable(true)
