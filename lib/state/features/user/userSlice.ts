@@ -13,12 +13,6 @@ const userSliceInitialState: userSliceModel = {
     keepMemory: typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).keepMemory : true : true
 }
 
-// typeof window !== "undefined" ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).keepMemory || true : true : true
-
-console.log("userSliceInitialState", userSliceInitialState);
-
-
-
 export const UserSlice = createAppSlice({
     name: "user",
     initialState: userSliceInitialState,
@@ -47,7 +41,7 @@ export const UserSlice = createAppSlice({
 
             const userStored = localStorage.getItem('user');
             if (userStored) {
-               let updatedVal = JSON.parse(userStored);
+               const updatedVal = JSON.parse(userStored);
                updatedVal.keepMemory = actions.payload;
                localStorage.setItem('user', JSON.stringify(updatedVal));
             }
