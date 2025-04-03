@@ -41,19 +41,19 @@ import {
 import axios from "axios";
 import { CommandList } from "cmdk";
 import {
-  BotIcon,
   BrainIcon,
   BrushIcon,
   BugIcon,
   CheckCheckIcon,
+  CirclePlusIcon,
   CogIcon,
+  ComputerIcon,
   CopyIcon,
   FileIcon,
-  LanguagesIcon,
-  NotebookPenIcon,
+  LanguagesIcon, ListCheckIcon, NotebookPenIcon,
   PencilIcon,
   SparklesIcon,
-  XIcon,
+  XIcon
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -63,6 +63,7 @@ import z from "zod";
 type ToolsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  addToChatFromToolsHandler: (response: string) => void;
 };
 
 // Prompt Enhancer Formgroup
@@ -144,7 +145,7 @@ const unitTestScheme = z.object({
   context: z.string().optional(),
 });
 
-export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
+export default function ToolsModal({ open, onOpenChange, addToChatFromToolsHandler }: ToolsModalProps) {
   const toolList = [
     {
       id: 0,
@@ -195,6 +196,13 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
     },
     {
       id: 7,
+      title: "Dev Toolkit",
+      description:
+        "A collection of essential tools to streamline your development workflow and boost productivity",
+      icon: ComputerIcon,
+    },
+    {
+      id: 8,
       title: "Project Memorization",
       description:
         "To supercharge your coding speed, dive deep into your project's codebase and surroundings!",
@@ -202,20 +210,19 @@ export default function ToolsModal({ open, onOpenChange }: ToolsModalProps) {
       disable: true,
     },
     {
-      id: 8,
+      id: 9,
       title: "Technical Writing",
       description:
         "Craft compelling and informative technical content with our AI-powered writing assistant.",
       icon: NotebookPenIcon,
       disable: true,
     },
-
     {
-      id: 9,
-      title: "Coding Assistant",
+      id: 10,
+      title: "Daily checklist",
       description:
-        "Transform your project with the help of our AI coding assistant, making it easier and more efficient.",
-      icon: BotIcon,
+        "List of tasks to keep you organized and on track with your day-to-day tasks.",
+      icon: ListCheckIcon,
       disable: true,
     },
   ];
@@ -1616,12 +1623,12 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
               {promptEnhanceResult !== "" && (
                 <div ref={promptEnhancerRef} className="grid w-full gap-2 relative mt-4">
                   {toolType !== 4 && toolType !== 6 && toolType !== 5 ? (
-                    <Textarea
-                      rows={1}
-                      readOnly
-                      value={promptEnhanceResult}
-                      className="h-full focus-visible:ring-0 pr-10 min-h-[300px]"
-                    />
+                 <Textarea
+                 rows={1}
+                 readOnly
+                 value={promptEnhanceResult}
+                 className="h-full focus-visible:ring-0 pr-10 min-h-[300px]"
+               />
                   ) : toolType === 5 ? (
                     <Tabs defaultValue="preview" className="w-full">
                       <TabsList>
@@ -1650,19 +1657,41 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
                       isInput={false}
                     />
                   )}
-                  {promptCopyStatus === "idle" && (
-                    <CopyIcon
-                      className="h-5 w-5 absolute top-2 right-2 cursor-pointer"
-                      onClick={handleCopyPromptEnhance}
-                    />
-                  )}
-                  {promptCopyStatus === "success" && (
-                    <CheckCheckIcon className="h-5 w-5 absolute top-2 right-2 text-green-500" />
-                  )}
-                  {promptCopyStatus === "error" && (
-                    <XIcon className="h-5 w-5 absolute top-2 right-2 text-red-500" />
-                  )}
-                </div>
+      {promptCopyStatus === "idle" && (
+      <CopyIcon
+        className="h-5 w-5 cursor-pointer absolute top-4 right-2 transition-all hover:text-gray-600 dark:hover:text-gray-300"
+        onClick={handleCopyPromptEnhance}
+      />
+    )}
+    {promptCopyStatus === "success" && (
+      <CheckCheckIcon className="h-5 w-5 absolute top-4 right-2 text-green-500 animate-fadeIn" />
+    )}
+    {promptCopyStatus === "error" && (
+      <XIcon className="h-5 w-5 text-red-50 absolute top-4 right-2 animate-shake"  />
+    )}
+  {/* Add to Chat Button */}
+{
+  toolType == 0 && (
+    <button
+    className="flex items-center gap-2 absolute top-2 right-10 px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-sm text-gray-700 dark:text-gray-300"
+    role="button"
+    aria-label="Add to chat"
+    onClick={()=> {
+      addToChatFromToolsHandler(promptEnhanceResult)
+      onOpenChange(false)
+    }}
+  >
+    <p className="text-md">Add to chat</p>
+    <CirclePlusIcon className="h-5 w-5" />
+  </button>
+  )
+}
+</div>
+
+
+            
+
+                
               )}
             </div>
 

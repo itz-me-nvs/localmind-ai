@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { ChatModel } from "@/lib/model/chatModel";
 import "highlight.js/styles/github-dark.css"; // Choose a highlight theme
-import { RotateCcwIcon } from "lucide-react";
+import { CopyIcon, Edit2Icon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import Markdown from "react-markdown";
@@ -39,7 +39,7 @@ export default function OllamaChat({
         <div key={item.id} className={`${item.id == 0 ? "hidden" : ""}`}>
           <div
             className={`flex w-full items-start gap-3 text-wrap break-words whitespace-pre-wrap ${
-              item.role === "user" ? "justify-end" : "justify-start mb-6"
+              item.role === "user" ? "justify-end" : "justify-start mb-14"
             }`}
           >
             {item.role == "assistant" && (
@@ -54,7 +54,8 @@ export default function OllamaChat({
               </div>
             )}
 
-            <div
+           <div className="flex items-end gap-2 flex-col">
+           <div
               className={`rounded-3xl px-4 py-2 text-wrap ${
                 item.role === "user"
                   ? "bg-background-message text-black dark:text-white"
@@ -98,6 +99,22 @@ export default function OllamaChat({
                 </Markdown>
               )}
             </div>
+
+            {
+              item.role == "user" && (
+                <div className="flex items-center gap-2">
+              <div className="bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 p-2 rounded-xl cursor-pointer">
+              <CopyIcon className="h-4 w-4" />
+              </div>
+              <div className="bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 p-2 rounded-xl cursor-pointer">
+              <Edit2Icon className="h-4 w-4" />
+              </div>
+            </div>
+              )
+            }
+           </div>
+
+            
           </div>
         </div>
       ))}

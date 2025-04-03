@@ -6,8 +6,10 @@ Sidebar for Recent Chats.
 Chat Delete Option + UI
 Chat Retry + Prev chat seek option.
 Chat History (Chat Memory)
-Chat Share Option
 Add to Chat Option in tools.
+
+# thing to do(TTD) v2
+Chat Share Option
 Fussy Search on Recent chats
 Performance & Error handling
 Global Error Monitoring (sentry.io)
@@ -23,6 +25,8 @@ Pull models from it.
 
 # Marketing.
 Project Landing Page.
+
+# Proxy Setup
 
 
 Prompt Enhancer:-
@@ -40,9 +44,7 @@ TOOLS:-
   b. Error/Bug Fix
   c. Unit Testing
   d. Project memorization
-
-Common Design Standards
-Common Security & Backend Setups
+  e. Developer Helpers
 
 
 # Future

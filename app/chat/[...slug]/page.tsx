@@ -67,7 +67,7 @@ import moment from "moment";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { redirect, useParams, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -131,6 +131,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     // update chat memory state.
     setKeepChat(keepChatMemory);
   }, []);
+
 
   useEffect(() => {
     const getOllamaModels = async () => {
@@ -571,6 +572,13 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     }
   }
 
+  const addToChatFromTools = useCallback((response: string)=> {
+    console.log("response", response);
+    if(response){
+      setInput(response);
+    }
+  }, [])
+
   return (
     <div className="h-screen mb-3 text-gray-900 dark:text-gray-100 overflow-hidden bg-gray-100 dark:bg-gray-900">
       {/* Header */}
@@ -833,7 +841,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         </div>
       </form>
 
-      <ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen} />
+      <ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen} addToChatFromToolsHandler={addToChatFromTools} />
     </div>
   );
 }
