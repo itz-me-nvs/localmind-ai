@@ -54,6 +54,7 @@ import { formatBytes } from "@/lib/utils";
 import "@uiw/react-textarea-code-editor/dist.css";
 import axios, { AxiosError } from "axios";
 import {
+  CircleStopIcon,
   Columns2Icon,
   EarthIcon,
   MessageSquareIcon,
@@ -93,6 +94,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [promptModelOpen, setPromptModelOpen] = useState<boolean>(false);
   const [toolModelOpen, setToolModelOpen] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [chatContainerFocus, setChatContainerFocus] = useState(false);
 
   const inputContainerRef = useRef<HTMLFormElement>(null);
   const placeHolderRef = useRef<HTMLParagraphElement>(null);
@@ -100,14 +102,13 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatID, setChatID] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatHistoryModel[]>([]);
-  const [keepChat, setKeepChat] = useState(true);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
 
   const theme = useAppSelector(selectTheme);
   const selectedModel = useAppSelector(selectModel);
-  const keepChatMemory = useAppSelector(selectKeepChatMemory);
-  console.log("keepChatMemory", keepChatMemory);
-  
-
+  const keepChatMemory = useAppSelector(selectKeepChatMemory);  
   const dispatch = useAppDispatch();
 
   const router = useRouter();
@@ -128,8 +129,6 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       setChatID(slug[0]);
     }
 
-    // update chat memory state.
-    setKeepChat(keepChatMemory);
   }, []);
 
 
@@ -152,7 +151,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           data?.models.forEach((model: OllamaModelList) => {
             modelArr.push({
               model: model.model,
-              size: model.size,
+              size: formatBytes(Number(model.size)),
               id: model.model,
             });
           });
@@ -185,12 +184,18 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     getOllamaModels();
   }, []);
 
-  // useEffect(() => {
-  //   if (promptModelOpen) {
-  //     form.reset(); // reset the form on intial render
-  //     setPromptEnhanceResult("");
-  //   }
-  // }, [promptModelOpen]);
+  // scroll to bottom based on new chat.
+  useEffect(() => {
+    if (chatContainerFocus) {
+      scrollToBottom();
+    }
+  }, [chatContainerFocus]);
+
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {     
+      chatContainerRef.current?.scrollTo({behavior: 'smooth', top: chatContainerRef.current.scrollHeight});
+    }
+  };
 
   const sidebarChatHistory = async () => {
     const loadAllMessages = await getAllMessages();
@@ -219,6 +224,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
         id: 0,
         isError: false,
+        keepChat: false,
       },
     ];
 
@@ -238,11 +244,15 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
               content: item.content,
               isError: false,
               role: item.role,
+              keepChat: message.keepChat || false,
             });
           });
 
           setChat(updatedChats);
-        }
+
+          // scroll to bottom
+          requestAnimationFrame(scrollToBottom);
+         }
       });
     }
   };
@@ -291,9 +301,11 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         content: input,
         role: "user",
         isError: false,
+        keepChat: keepChatMemory
       },
     ]);
 
+    setChatContainerFocus(true);
     setIsLoading(true);
 
     if (chat.length - 1 < 1) {
@@ -308,16 +320,23 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   ): Promise<string> => {
     try {
       if (chat.length > 1) {
-        const content = chat
-          .slice(1, -MAX_MESSAGES)
+        const content = (chat.length < MAX_MESSAGES ? chat
+        .slice(1) : chat.slice(-MAX_MESSAGES))
+        .filter(el => el.keepChat == true)
           .map((item: ChatModel) => `${item.role}: ${item.content}`)
           .join(" ");
+
+          console.log("content", content);
+
+          console.log("keepChat contents", chat); 
+          
+          
 
         const response = await axios.post(
           "/api/ollama/generate",
           {
             model: selectedModel,
-            prompt: `Summarize the following chat history: ${content}`,
+            prompt: `Summarize the following chat history in 1-2 sentences. Focus on remembering specific information shared by the user such as their name, location, preferences, or any questions asked. Do not add unnecessary generalizations. Be concise and keep useful memory context. Chat History: ${content}`,
             stream: false,
           },
           {
@@ -351,12 +370,18 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     let messages: OllamaAPIChatRequestModel[] = [];
     let chatSummary = "";
 
-    chatSummary = await summarizeChatHistory();
+    const abortController = new AbortController();
+    setAbortController(abortController);
+
+    if(keepChatMemory){
+      chatSummary = await summarizeChatHistory();
+    }
+
     messages = [
       {
         role: "system",
-        content: `Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information. Here is the summary of previous chat ${chatSummary}`,
-      },
+        content: `You are a helpful, respectful AI assistant. Provide accurate, concise responses in English. Avoid guessing. If you don’t know something, reply with "I don't know". Remember any information the user shares about their name, location, or preferences. Here's a summary of the prior chat: ${chatSummary}`
+      },      
       {
         role: "user",
         content: input,
@@ -373,6 +398,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           messages: messages ?? [],
           stream: true,
         }),
+        signal: abortController.signal,
       });
 
       if (!response.body) throw new Error("Readable stream not available");
@@ -389,6 +415,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           content: "",
           role: "assistant",
           isError: false,
+          keepChat: keepChatMemory,
         },
       ]);
 
@@ -433,6 +460,8 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         }
       }
 
+      setAbortController(null);
+
       const newMessage = [
         {
           role: "user",
@@ -444,21 +473,28 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         },
       ];
 
-      const summarizeResponse = await axios.post(
-        "/api/ollama/generate",
-        {
-          model: selectedModel || "qwen2.5:0.5b",
-          prompt: `Give me a very small title for the following chat history: ${JSON.stringify(
-            result
-          )}`,
-          stream: false,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
+      let summarizeResponse = null;
+
+      console.log("chat.length", chat.length, chat);
+      
+
+      if(chat.length < 2){
+        summarizeResponse = await axios.post(
+          "/api/ollama/generate",
+          {
+            model: selectedModel || "qwen2.5:0.5b",
+            prompt: `Give me a very small title for the following chat history: ${JSON.stringify(
+              result
+            )}`,
+            stream: false,
           },
-        }
-      );
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
 
       const responseTitle = summarizeResponse?.data?.response || "";
       console.log(responseTitle);
@@ -467,9 +503,15 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         chatID,
         JSON.stringify(newMessage),
         responseTitle ?? "",
-        "assistant"
+        "assistant",
+        keepChatMemory
       );
-    } catch (error) {
+    } catch (error: any) {
+
+      if(error?.name == 'AbortError'){
+        return;
+      }
+      
       toast.error("Something went wrong", {
         style: {
           backgroundColor: "hsl(var(--destructive))",
@@ -477,6 +519,11 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         },
       });
       throw error;
+    }
+    finally {
+      setIsLoading(false);
+      setAbortController(null);
+      setChatContainerFocus(false);
     }
   };
 
@@ -579,6 +626,13 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     }
   }, [])
 
+  const stopRequestedChat = ()=> {
+    if(abortController){
+      abortController.abort();
+      setAbortController(null);
+    }
+  }
+
   return (
     <div className="h-screen mb-3 text-gray-900 dark:text-gray-100 overflow-hidden bg-gray-100 dark:bg-gray-900">
       {/* Header */}
@@ -625,7 +679,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                 <SelectItem key={item.id} value={item.model}>
                  <div className="flex justify-between items-center w-full">
           <span>{item.model}</span>
-          <Badge className="ml-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">{formatBytes(item.size)}</Badge> 
+          <Badge className="ml-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">{item.size}</Badge> 
         </div>
                 </SelectItem>
               ))}
@@ -705,7 +759,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                     />
 
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {chat.dateInFormat} - {chat.dataClosed ? 'Closed' : 'Open'}
+                    {chat.dateInFormat}
                   </p>
                 </div>
 
@@ -758,88 +812,91 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main
-        className={`relative flex ${
-          isSubmitted
-            ? "justify-start min-h-[80vh] mt-20"
-            : "justify-center min-h-screen"
-        }
-      items-center h-full flex-col transition-transform ${
-        sidebarOpen && isSubmitted ? "ml-72" : "ml-20"
-      } `}
-      >
-        {isSubmitted ? (
-          <OllamaChat chatList={chat} isLoading={isLoading} />
-        ) : (
-          <div className="flex items-center justify-center p-2 rounded-lg">
-            <Image
-              src="/logo/logo.svg"
-              alt="Ollama UI"
-              width={150}
-              height={150}
-            />
-          </div>
-        )}
-      </main>
-
-      {/* Form Input */}
-      <form
-        onSubmit={handleSubmit}
-        ref={inputContainerRef}
-        className={`p-3 fixed bottom-4 transition-all duration-300 m-auto left-1/2 flex flex-col
-        border border-gray-300 dark:border-gray-700 shadow-lg rounded-lg bg-white dark:bg-gray-800 w-full max-w-screen-md
-        ${sidebarOpen ? "translate-x-[calc(-50%+9rem)]" : "-translate-x-1/2"}
-        ${!isSubmitted ? "lg:-translate-y-44" : ""}`}
-      >
-        <Textarea
-          onInput={handleInputChange as any}
-          onKeyDown={handleKeyDown as any}
-          className="group flex items-center text-xl border-none focus-visible:ring-0 shadow-none focus:outline-none break-words resize-none overflow-auto min-h-[44px] max-h-32 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
-          placeholder="Ask a question"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+  className={`flex flex-col h-screen transition-all mt-10 ${
+    sidebarOpen ? "ml-72" : "ml-20"
+  }`}
+>
+  {/* Chat Content Area */}
+  <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-6 mt-5 mb-8">
+    {isSubmitted ? (
+      <OllamaChat chatList={chat} isLoading={isLoading} />
+    ) : (
+      <div className="flex justify-center items-center h-full z-50">
+        <Image
+          src="/logo/logo.svg"
+          alt="Ollama UI"
+          width={150}
+          height={150}
         />
+      </div>
+    )}
+  </div>
 
-        <div className="flex justify-between items-center mt-3 px-2">
-          <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-3">
-            <div
-              className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-              onClick={() => setToolModelOpen(true)}
-            >
-              <WrenchIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              <span className="text-gray-700 dark:text-gray-300">Tools</span>
-            </div>
+  {/* Fixed Input Form */}
+  <form
+    onSubmit={handleSubmit}
+    ref={inputContainerRef}
+    className={`px-3 py-2 sticky bottom-2 z-10 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700
+      w-full max-w-screen-md mx-auto shadow-md rounded-lg
+      transition-all duration-300`}
+  >
+    <div className="flex justify-between items-center">
+    <Textarea
+      onInput={handleInputChange as any}
+      onKeyDown={handleKeyDown as any}
+      className="w-full text-xl focus-visible:ring-0 focus:outline-none  border-none focus:ring-0 shadow-none outline-none break-words resize-none overflow-auto min-h-[44px] max-h-32 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
+      placeholder="Ask a question"
+      value={input}
+      onChange={(e) => setInput(e.target.value)}
+    />
 
-            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary opacity-70 pointer-events-none">
-              <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              <span className="text-gray-700 dark:text-gray-300">Search</span>
-            </div>
+    {
+      abortController && (
+        <CircleStopIcon onClick={stopRequestedChat} className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+      )
+    }
 
-            <div className="relative py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-100 dark:bg-background-secondary opacity-70 pointer-events-none">
-              <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              <span className="text-gray-700 dark:text-gray-300">Fine tune</span>
-            </div>
-          </div>
+    </div>
 
-          <div className="flex items-center space-x-2">
-  <Switch
-    id="airplane-mode"
-    checked={keepChat}
-    onCheckedChange={(checked)=> {
-      setKeepChat(checked);
-      dispatch(setKeepChatMemory(checked));
-    } }
-    className="data-[state=checked]:bg-blue-500 data-[state=checked]:dark:bg-blue-500 bg-gray-300 dark:bg-gray-700 transition-colors"
-  />
-  <Label htmlFor="airplane-mode">Keep chat memory</Label>
-</div>
-
-
-          </div>
+    <div className="flex justify-between items-center mt-3 px-2">
+      <div className="flex items-center gap-3">
+        {/* Tools Button */}
+        <div
+          className="py-2 px-3 flex items-center gap-2 rounded-lg cursor-pointer bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+          onClick={() => setToolModelOpen(true)}
+        >
+          <WrenchIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          <span className="text-gray-700 dark:text-gray-300">Tools</span>
         </div>
-      </form>
+
+        {/* Disabled Search & Fine Tune */}
+        <div className="py-2 px-3 flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-background-secondary opacity-70 pointer-events-none">
+          <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          <span className="text-gray-700 dark:text-gray-300">Search</span>
+        </div>
+        <div className="py-2 px-3 flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-background-secondary opacity-70 pointer-events-none">
+          <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          <span className="text-gray-700 dark:text-gray-300">Fine tune</span>
+        </div>
+      </div>
+
+      {/* Keep Memory Switch */}
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="airplane-mode"
+          checked={keepChatMemory}
+          onCheckedChange={(checked) => {
+            dispatch(setKeepChatMemory(checked));
+          }}
+          className="data-[state=checked]:bg-blue-500 data-[state=checked]:dark:bg-blue-500 bg-gray-300 dark:bg-gray-700 transition-colors"
+        />
+        <Label htmlFor="airplane-mode">Keep chat memory</Label>
+      </div>
+    </div>
+  </form>
+</main>
+
 
       <ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen} addToChatFromToolsHandler={addToChatFromTools} />
     </div>

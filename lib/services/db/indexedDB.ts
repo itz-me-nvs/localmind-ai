@@ -11,7 +11,7 @@ const dbPromise = openDB(DB_NAME, 1, {upgrade(db) {
 }})
 
 
-export const addMessage = async(chatId: string, message: string,title: string, sender: string)=> {
+export const addMessage = async(chatId: string, message: string,title: string, sender: string, keepChat: boolean)=> {
     const db = await dbPromise;
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
@@ -23,7 +23,8 @@ export const addMessage = async(chatId: string, message: string,title: string, s
         existingChat.messages.push({
             message,
             sender,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            keepChat
         })
         store.put(existingChat);
     }
@@ -34,6 +35,7 @@ export const addMessage = async(chatId: string, message: string,title: string, s
                 message,
                 sender,
                 timestamp: Date.now(),
+                keepChat
             }],
             title
         })

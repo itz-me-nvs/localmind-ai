@@ -4,7 +4,7 @@ import { ChatModel } from "@/lib/model/chatModel";
 import "highlight.js/styles/github-dark.css"; // Choose a highlight theme
 import { CopyIcon, Edit2Icon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
@@ -21,25 +21,28 @@ export default function OllamaChat({
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
+      console.log("scrollTop", chatContainerRef.current.scrollTop);
+      console.log("scrollHeight", chatContainerRef.current.scrollHeight);
+      
       chatContainerRef.current.scrollTop =
         chatContainerRef.current.scrollHeight;
     }
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [chatList]);
+  // useEffect(() => {
+  //   scrollToBottom();
+  // }, [chatList]);
   return (
     <div
-    ref={chatContainerRef}
     className="w-full flex space-y-4 px-4 overflow-y-auto dark:bg-gray-900 text-gray-900 dark:text-gray-100"
   >
-    <div className="max-h-[70vh] max-w-screen-md w-full m-auto flex flex-col space-y-4">
+    <div
+ className="max-w-screen-md w-full m-auto flex flex-col space-y-4 mb-10">
       {chatList.map((item) => (
         <div key={item.id} className={`${item.id == 0 ? "hidden" : ""}`}>
           <div
-            className={`flex w-full items-start gap-3 text-wrap break-words whitespace-pre-wrap ${
-              item.role === "user" ? "justify-end" : "justify-start mb-14"
+            className={`flex w-full group items-start gap-3 text-wrap break-words whitespace-pre-wrap ${
+              item.role === "user" ? "justify-end" : "justify-start mb-4"
             }`}
           >
             {item.role == "assistant" && (
@@ -85,8 +88,8 @@ export default function OllamaChat({
                   components={{
                     code: ({ node, className, children, ...props }) => {
                       return (
-                        <CodeBlock
-                          className={`${className} rounded-lg bg-gray-200 dark:bg-gray-800 text-black dark:text-white`}
+                          <CodeBlock
+                          className={`${className} overflow-x-auto break-words whitespace-pre-wrap rounded-lg bg-gray-200 dark:bg-gray-800 text-black dark:text-white`}
                           {...props}
                         >
                           {children}
@@ -102,7 +105,7 @@ export default function OllamaChat({
 
             {
               item.role == "user" && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <div className="bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 p-2 rounded-xl cursor-pointer">
               <CopyIcon className="h-4 w-4" />
               </div>
@@ -118,6 +121,12 @@ export default function OllamaChat({
           </div>
         </div>
       ))}
+
+
+
+      {/* <button className="absolute bottom-4 right-4" onClick={scrollToBottom}> 
+        Move
+      </button> */}
 
       {isLoading && (
         <div className="flex items-center justify-start">

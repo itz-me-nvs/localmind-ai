@@ -3,11 +3,12 @@ export interface ChatModel {
     content: string;
     role: string;
     isError: boolean
+    keepChat?: boolean
 }
 
 export interface OllamaModelList {
     model: string;
-    size: number;
+    size: string;
     id: string;
 }
 
