@@ -1,10 +1,19 @@
 import type { NextConfig } from "next";
-import removeImport from "next-remove-imports"
+import removeImport from "next-remove-imports";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  experimental: {esmExternals: true}
- 
+  experimental: {esmExternals: true},
+  images: {
+    remotePatterns: [
+     {
+      protocol: 'https',
+      hostname: 'picsum.photos',
+      port: '',
+      pathname: '/**'
+     }
+    ]
+  }
 };
 
 export default removeImport()(nextConfig);
