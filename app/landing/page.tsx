@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function LandingPage() {
   return (
-    <div className="h-screen overflow-y-auto bg-gradient-to-br from-white via-blue-100 to-cyan-100 text-gray-800">
+    <div className="h-screen overflow-y-auto bg-gradient-to-br from-white to-cyan-100 text-gray-800">
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-lg bg-white/30 shadow-md border-b border-white/50">
   <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
