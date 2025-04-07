@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 export default function Base64EncoderTool() {
@@ -54,13 +55,14 @@ export default function Base64EncoderTool() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-xl">
-      <div className="flex mb-4 border-b">
+    <div className="w-full p-2 mx-auto rounded-xl">
+       <h1 className="text-3xl font-bold text-gray-800 mb-3">Base64 Encoder</h1>
+      <div className="flex border-b mt-4">
         <button
           onClick={() => {
            handleSetMode('decode'); 
           }}
-          className={`px-4 py-2 ${mode === 'decode' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}
+          className={`px-4 py-2 ${mode === 'decode' ? 'border-b-2 border-gray-600 font-semibold' : 'text-gray-500'}`}
         >
           Decode
         </button>
@@ -68,7 +70,7 @@ export default function Base64EncoderTool() {
           onClick={() => {
             handleSetMode('encode'); 
           }}
-          className={`px-4 py-2 ${mode === 'encode' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}
+          className={`px-4 py-2 ${mode === 'encode' ? 'border-b-2 border-gray-600 font-semibold' : 'text-gray-500'}`}
         >
           Encode
         </button>
@@ -82,12 +84,15 @@ export default function Base64EncoderTool() {
             placeholder={mode == 'decode' ? 'Paste base64 to decode' : 'Paste string to encode...'}
           />
           <div className="flex gap-2 mb-4">
-            <button onClick={mode == 'decode' ? handleDecode : handleEncode} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-              Decode
-            </button>
-            <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 transition">
-              Clear
-            </button>
+
+<Button onClick={mode == 'decode' ? handleEncode : handleDecode}>
+              {mode == 'decode' ? 'Encode' : 'Decode'}
+            </Button>
+
+            
+            <Button onClick={handleClear} variant={"outline"}>
+            Clear
+            </Button>
           </div>
         </>
 

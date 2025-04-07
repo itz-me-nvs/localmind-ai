@@ -68,7 +68,7 @@ const selectedModel = useAppSelector(selectModel);
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-xl">
+    <div className="max-w-5xl mx-auto p-2 rounded-xl">
       <h2 className="text-2xl font-bold mb-4">Git Command Generator</h2>
 
       <label className="block mb-2 font-medium">Select Common Git Task</label>

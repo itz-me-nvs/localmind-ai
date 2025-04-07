@@ -3,22 +3,22 @@ import CodePreview from "@/components/ai/codePreview";
 import { BounceLoader } from "@/components/ui/bounceLoader";
 import { Button } from "@/components/ui/button";
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
 } from "@/components/ui/command";
 import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,26 +28,24 @@ import { selectModel } from "@/lib/state/features/user/userSlice";
 import { useAppSelector } from "@/lib/state/hooks";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@radix-ui/react-popover";
 import axios from "axios";
 import { CommandList } from "cmdk";
 import {
-    BrainIcon,
-    BrushIcon,
-    BugIcon,
-    CheckCheckIcon,
-    CirclePlusIcon,
-    CogIcon,
-    ComputerIcon,
-    CopyIcon,
-    FileIcon,
-    LanguagesIcon, ListCheckIcon, NotebookPenIcon,
-    PencilIcon,
-    SparklesIcon,
-    XIcon
+  BrainIcon,
+  BrushIcon,
+  BugIcon,
+  CheckCheckIcon,
+  CirclePlusIcon,
+  CogIcon,
+  ComputerIcon,
+  CopyIcon, FileIcon,
+  LanguagesIcon, ListCheckIcon, NotebookPenIcon,
+  PencilIcon,
+  SparklesIcon, XIcon
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -903,10 +901,25 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
     // onCodeChange(e.target.value);
   };
   return (
-    <div className="h-full min-w-[100%] h-[100%] overflow-hidden">
+    <div className="h-full min-w-[100%] h-[100%] overflow-hidden p-6">
+
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col">
+        <h1 className="text-2xl font-bold">{ToolItem.title}</h1>
+        <p className="text-gray-500">{ToolItem.description}</p>
+        </div>
+        <button
+          onClick={() => onOpenChange(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <XIcon className="w-6 h-6" />
+        </button>
+        
+      </div>
  
-    <div className="grid grid-cols-4 gap-4 py-6 h-full my-10">
-      <div className="col-span-3 bg-white dark:bg-gray-900 p-2 rounded-lg h-full  overflow-auto" style={{maxHeight: "min(100vh - 2em, 600px"}}>
+    <div className="grid grid-cols-4 gap-4 py-6 h-full">
+    {/* style={{maxHeight: "min(100vh - 2em, 600px"}} */}
+      <div className="col-span-3 bg-white dark:bg-gray-900 p-6 rounded-lg h-full overflow-auto" style={{maxHeight: 'min(100vh - 2em, 600px', overflowY: 'auto', minHeight: '100%'}}>
         {toolType === 0 && (
           <Form {...promptEnhancerForm}>
             <form

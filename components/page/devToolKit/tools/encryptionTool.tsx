@@ -45,7 +45,7 @@ export default function EncryptionTester() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded-xl">
+    <div className="max-w-5xl mx-auto p-2 rounded-xl">
       <h2 className="text-2xl font-bold mb-4">Encryption / Decryption Tester</h2>
       <input
         type="text"

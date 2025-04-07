@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 export default function JWTTool() {
@@ -92,13 +93,15 @@ export default function JWTTool() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-xl">
-      <div className="flex mb-4 border-b">
+    <div className="w-full p-2 mx-auto rounded-xl">
+             <h1 className="text-3xl font-bold text-gray-800">JWT Encoder</h1>
+
+      <div className="flex border-b mt-4">
         <button
           onClick={() => {
            handleSetMode('decode'); 
           }}
-          className={`px-4 py-2 ${mode === 'decode' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}
+          className={`px-4 py-2 ${mode === 'decode' ? 'border-b-2 border-gray-600 font-semibold' : 'text-gray-500'}`}
         >
           Decode
         </button>
@@ -106,7 +109,7 @@ export default function JWTTool() {
           onClick={() => {
             handleSetMode('encode'); 
           }}
-          className={`px-4 py-2 ${mode === 'encode' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}
+          className={`px-4 py-2 ${mode === 'encode' ? 'border-b-2 border-gray-600 font-semibold' : 'text-gray-500'}`}
         >
           Encode
         </button>
@@ -116,18 +119,33 @@ export default function JWTTool() {
         <>
           <textarea
             rows={4}
-            className="w-full border p-3 rounded-md mb-4 font-mono text-sm"
+            className="w-full border p-3 rounded-md mb-4 font-mono text-sm focus:outline-none"
             value={token}
             onChange={(e) => setToken(e.target.value)}
             placeholder="Paste JWT to decode..."
           />
           <div className="flex gap-2 mb-4">
-            <button onClick={handleDecode} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+            {/* <button onClick={handleDecode} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 dark:hover:bg-gray-600 dark:bg-gray-700 transition">
               Decode
-            </button>
-            <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 transition">
+            </button> */}
+
+<Button
+onClick={handleDecode}
+className="flex items-center rounded transition"
+>
+<span>Decode</span>
+</Button>
+
+<Button
+onClick={handleClear}
+variant={'outline'}
+>
+<span>Clear</span>
+</Button>
+
+            {/* <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 transition">
               Clear
-            </button>
+            </button> */}
           </div>
         </>
       )}
@@ -136,25 +154,33 @@ export default function JWTTool() {
         <>
           <textarea
             rows={4}
-            className="w-full border p-3 rounded-md mb-3 font-mono text-sm"
+            className="w-full border p-3 rounded-md mb-3 font-mono text-sm focus:outline-none"
             value={header}
             onChange={(e) => setHeader(e.target.value)}
             placeholder='Header: { "alg": "HS256", "typ": "JWT" }'
           />
           <textarea
             rows={6}
-            className="w-full border p-3 rounded-md mb-3 font-mono text-sm"
+            className="w-full border p-3 rounded-md mb-3 font-mono text-sm focus:outline-none"
             value={payload}
             onChange={(e) => setPayload(e.target.value)}
             placeholder='Payload: { "user": "navas", "admin": true }'
           />
           <div className="flex gap-2 mb-4">
-            <button onClick={handleEncode} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-              Encode
-            </button>
-            <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 transition">
-              Clear
-            </button>
+
+            <Button
+onClick={handleEncode}
+className="flex items-center rounded transition"
+>
+<span>Encode</span>
+</Button>
+
+            <Button
+onClick={handleClear}
+variant={'outline'}
+>
+<span>Clear</span>
+</Button>
           </div>
         </>
       )}
@@ -180,7 +206,7 @@ export default function JWTTool() {
             <h3 className="font-semibold">Encoded JWT</h3>
             <button
               onClick={() => handleCopy(token)}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-gray-500 hover:underline"
             >
               Copy
             </button>

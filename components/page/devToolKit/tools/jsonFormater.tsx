@@ -1,7 +1,8 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import JSON5 from 'json5';
-import { Check, Clipboard, Trash2 } from 'lucide-react';
+import { Check, Clipboard } from 'lucide-react';
 import { useState } from 'react';
 
 export default function JSONFormatter() {
@@ -44,14 +45,14 @@ export default function JSONFormatter() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">🛠 JSON Formatter & Validator</h1>
+    <div className="w-full mx-auto bg-white space-y-6">
+      <h1 className="text-3xl font-bold text-gray-800">JSON Formatter & Validator</h1>
 
       <div className="space-y-2">
         <label className="font-semibold text-gray-700">Raw JSON Input</label>
         <textarea
           rows={10}
-          className="w-full border border-gray-300 focus:border-blue-500 focus:ring-blue-200 focus:ring-2 rounded-lg p-3 font-mono text-sm resize-y transition"
+          className="w-full border border-gray-300 focus:outline-none rounded-lg p-3 font-mono text-sm resize-y transition"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder='Paste or type your JSON here...'
@@ -59,19 +60,20 @@ export default function JSONFormatter() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <button
-          onClick={handleFormat}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg transition"
+
+        <Button  onClick={handleFormat}
+        
         >
           Format & Validate
-        </button>
-        <button
-          onClick={handleClear}
-          className="bg-gray-200 hover:bg-gray-300 text-black px-5 py-2 rounded-lg transition flex items-center gap-1"
+        </Button>
+
+        <Button  onClick={handleClear}
+       variant={'outline'}
+        
         >
-          <Trash2 className="w-4 h-4" />
           Clear
-        </button>
+        </Button>
+
         {formatted && (
           <button
             onClick={handleCopy}

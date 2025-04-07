@@ -52,7 +52,7 @@ export default function FileToBase64Converter() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-xl">
+    <div className="max-w-5xl mx-auto p-2  rounded-xl">
       <h2 className="text-2xl font-bold mb-4">File to Base64 Converter</h2>
 
       <input

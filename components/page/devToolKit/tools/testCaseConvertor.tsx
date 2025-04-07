@@ -59,7 +59,7 @@ export default function TextCaseConverter() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-xl">
+    <div className="max-w-5xl mx-auto p-2  rounded-xl">
       <h2 className="text-2xl font-bold mb-4">Text Case Converter</h2>
       <textarea
         rows={5}

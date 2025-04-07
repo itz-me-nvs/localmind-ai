@@ -5,17 +5,17 @@ import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from "@/components/ui/command"
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
@@ -24,12 +24,13 @@ interface ComboboxProps<T extends string | {value: string, label: string}> {
     className?: string,
     comboBoxList: T[],
     selectedItemHandler: (item: string) => void,
-    placeHolder?: string
+    placeHolder?: string,
+    defaultValue?: string
 }
 
-export function Combobox<T extends string | {value: string, label: string}>({comboBoxList, className, placeHolder, selectedItemHandler}: ComboboxProps<T>) {
+export function Combobox<T extends string | {value: string, label: string}>({defaultValue, comboBoxList, className, placeHolder, selectedItemHandler}: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false)
-  const [value, setValue] = React.useState("0")
+  const [value, setValue] = React.useState(defaultValue || '')
 
 
   const normalizeList = comboBoxList.map(item => {
@@ -61,7 +62,7 @@ export function Combobox<T extends string | {value: string, label: string}>({com
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
         <Command>
-          <CommandInput placeholder="Search framework..." />
+          <CommandInput placeholder={placeHolder || 'Select'} />
           <CommandList>
             <CommandEmpty>No items found.</CommandEmpty>
             <CommandGroup>
@@ -71,7 +72,7 @@ export function Combobox<T extends string | {value: string, label: string}>({com
                   value={item.value}
                   onSelect={(currentValue) => {
                     setValue(currentValue === value ? "" : currentValue)
-                    selectedItemHandler(currentValue === value ? "" : currentValue)
+                    selectedItemHandler(currentValue === value ? (defaultValue || '') : currentValue)
                     setOpen(false)
                   }}
                 >

@@ -25,7 +25,7 @@ export default function MockDataGenerator() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-xl">
+    <div className="max-w-5xl mx-auto p-2 rounded-xl">
       <h2 className="text-2xl font-bold mb-4">Mock Data Generator</h2>
       <div className="flex items-center gap-4 mb-4">
         <label htmlFor="recordCount" className="text-sm font-medium">Number of Records:</label>

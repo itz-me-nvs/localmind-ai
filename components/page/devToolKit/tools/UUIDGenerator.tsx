@@ -33,7 +33,7 @@ export default function UUIDGenerator() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded-lg">
+    <div className="max-w-5xl mx-auto p-2 rounded-lg">
       <h2 className="text-2xl font-bold mb-4">UUID Generator</h2>
 
       <div className="flex gap-4 items-center mb-4">
