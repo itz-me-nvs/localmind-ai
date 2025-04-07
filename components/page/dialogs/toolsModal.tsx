@@ -59,6 +59,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
+import DevToolKit from "../devToolKit/devToolKit";
 
 type ToolsModalProps = {
   open: boolean;
@@ -540,8 +541,7 @@ export default function ToolsModal({ open, onOpenChange, addToChatFromToolsHandl
   // reset tools on load
   useEffect(() => {
     if (open) {
-      toolsForms.forEach((item) => item.reset());
-      setToolType(0);
+      // toolsForms.forEach((item) => item.reset());
       setPromptEnhanceResult("");
     }
   }, [open]);
@@ -560,6 +560,7 @@ export default function ToolsModal({ open, onOpenChange, addToChatFromToolsHandl
       cancelAnimationFrame(animationFrameId);
     }
   }, [promptEnhanceResult])
+
 
   // Reset forms when tool type changes
   const handleToolTypeChange = (newToolType: number) => {
@@ -909,7 +910,7 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="min-w-[95%] h-[95%] overflow-hidden">
+      <DialogContent className="min-w-[100%] h-[100%] overflow-hidden">
         <div className="h-full">
           <DialogHeader>
             <DialogTitle>{ToolItem.title}</DialogTitle>
@@ -1619,6 +1620,12 @@ ${data.context ? `\n### **Additional Context**: ${data.context}` : ""}`;
                   </form>
                 </Form>
               )}
+
+              {
+                toolType ==7 && (
+                  <DevToolKit />
+                )
+              }
 
               {promptEnhanceResult !== "" && (
                 <div ref={promptEnhancerRef} className="grid w-full gap-2 relative mt-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import ToolsModal from "@/components/page/dialogs/toolsModal";
+import ToolsModal2 from "@/components/page/dialogs/toolsModal2";
 import OllamaChat from "@/components/page/ollamaChat";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -190,6 +190,8 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       scrollToBottom();
     }
   }, [chatContainerFocus]);
+
+
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {     
@@ -635,7 +637,10 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
   return (
     <div className="h-screen mb-3 text-gray-900 dark:text-gray-100 overflow-hidden bg-gray-100 dark:bg-gray-900">
-      {/* Header */}
+      {
+        !toolModelOpen ? (
+          <>
+          {/* Header */}
       <header
         className={`flex justify-between items-center sticky top-5 right-5 z-10`}
       >
@@ -895,10 +900,15 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       </div>
     </div>
   </form>
-</main>
+</main> 
+          </>) : (
+                  <ToolsModal2 open={toolModelOpen} onOpenChange={setToolModelOpen} addToChatFromToolsHandler={addToChatFromTools} />
+
+          )
+        
+      }
 
 
-      <ToolsModal open={toolModelOpen} onOpenChange={setToolModelOpen} addToChatFromToolsHandler={addToChatFromTools} />
     </div>
   );
 }
