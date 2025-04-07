@@ -11,7 +11,7 @@ import GitCommandGenerator from "./tools/gitCommandGenerator";
 import JSONFormatter from "./tools/jsonFormater";
 import JWTDecoder from "./tools/jwtEncoder";
 import MockDataGenerator from "./tools/mockGenerator";
-import TextCaseConverter from "./tools/testCaseConvertor";
+import TextCaseConverter from "./tools/textCaseConvertor";
 import UUIDGenerator from "./tools/UUIDGenerator";
 
 import { AnimatePresence, motion } from "framer-motion";

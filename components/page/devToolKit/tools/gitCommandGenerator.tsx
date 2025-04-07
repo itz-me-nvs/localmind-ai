@@ -1,55 +1,62 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { selectModel } from '@/lib/state/features/user/userSlice';
 import { useAppSelector } from '@/lib/state/hooks';
 import axios from 'axios';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const gitTasks = [
-    { label: 'Create New Branch and Push', value: 'create new branch and push' },
-    { label: 'Commit Changes', value: 'commit changes' },
-    { label: 'Push Changes', value: 'push changes' },
-    { label: 'Pull Latest', value: 'pull latest' },
-    { label: 'Clone Repository', value: 'clone repository' },
-    { label: 'Merge Branches', value: 'merge branches' },
-    { label: 'Rebase Branch', value: 'rebase branch' },
-  ];
+  { label: 'Create New Branch and Push', value: 'create new branch and push' },
+  { label: 'Commit Changes', value: 'commit changes' },
+  { label: 'Push Changes', value: 'push changes' },
+  { label: 'Pull Latest', value: 'pull latest' },
+  { label: 'Clone Repository', value: 'clone repository' },
+  { label: 'Merge Branches', value: 'merge branches' },
+  { label: 'Rebase Branch', value: 'rebase branch' },
+];
 
 export default function GitCommandGenerator() {
   const [task, setTask] = useState('');
   const [command, setCommand] = useState('');
   const [error, setError] = useState('');
-const selectedModel = useAppSelector(selectModel);
+  const selectedModel = useAppSelector(selectModel);
 
-  const handleGenerate = async() => {
+  const handleGenerate = async () => {
     if (!task.trim()) {
-      setError('Please enter a Git task description.');
+      setError('Please enter or select a Git task.');
       return;
     }
 
     try {
-      const lowerTask = task.toLowerCase();
-      let result = null;
-
-
-      result = await axios.post(
-        "/api/ollama/generate",
+      const response = await axios.post(
+        '/api/ollama/generate',
         {
-          model: selectedModel || "qwen2.5:0.5b",
-          prompt: `Return only the Git command(s) for the task: ${JSON.stringify(lowerTask)}. Do not include any explanation, comments, or extra text. Output must be plain command(s) only.`,
-
+          model: selectedModel || 'qwen2.5:0.5b',
+          prompt: `Return only the Git command(s) for the task: ${JSON.stringify(
+            task.toLowerCase()
+          )}. Do not include any explanation, comments, or extra text. Output must be plain command(s) only.`,
           stream: false,
         },
         {
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
         }
       );
 
-      const gitCommandResponse = result?.data?.response || "";
-      console.log(gitCommandResponse);
-      setCommand(gitCommandResponse);
+      const gitCommand = response?.data?.response || '';
+      setCommand(gitCommand);
       setError('');
     } catch (err) {
       setError('Something went wrong.');
@@ -63,55 +70,64 @@ const selectedModel = useAppSelector(selectModel);
     setError('');
   };
 
-  const handleSelectTask = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setTask(e.target.value);
-  };
-
   return (
-    <div className="max-w-5xl mx-auto p-2 rounded-xl">
-      <h2 className="text-2xl font-bold mb-4">Git Command Generator</h2>
+    <Card className="w-full mx-auto p-4 bg-white dark:bg-gray-900 border-none shadow-none rounded-xl space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Git Command Generator</h1>
 
-      <label className="block mb-2 font-medium">Select Common Git Task</label>
-      <select
-        className="w-full p-2 border rounded-md mb-4"
-        value={task}
-        onChange={handleSelectTask}
-      >
-        <option value="">-- Choose a task --</option>
-        {gitTasks.map(({ label, value }) => (
-          <option key={value} value={value}>{label}</option>
-        ))}
-      </select>
-
-      <textarea
-        className="w-full border p-3 rounded-md mb-4 font-mono"
-        rows={4}
-        placeholder="Or describe your own task here..."
-        value={task}
-        onChange={(e) => setTask(e.target.value)}
-      />
-
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={handleGenerate}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          Generate Command
-        </button>
-        <button
-          onClick={handleClear}
-          className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 transition"
-        >
-          Clear
-        </button>
+      <div>
+        <Label className="mb-1 block">Select Common Git Task</Label>
+        <Select onValueChange={setTask} value={task}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Choose a task" />
+          </SelectTrigger>
+          <SelectContent>
+            {gitTasks.map(({ label, value }) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {error && <p className="text-red-500 mb-2">{error}</p>}
-      {command && (
-        <pre className="bg-gray-100 border rounded p-4 whitespace-pre-wrap font-mono text-sm">
-          {command}
-        </pre>
+      <div>
+        <Label className="mb-1 block">Or Describe Your Own Task</Label>
+        <Textarea
+          rows={3}
+          placeholder="E.g., create a new branch and push to remote"
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <Button onClick={handleGenerate}>Generate Command</Button>
+        <Button variant="outline" onClick={handleClear}>
+          Clear
+        </Button>
+      </div>
+
+      {error && (
+        <p className="text-red-500 text-sm">{error}</p>
       )}
-    </div>
+
+      {command && (
+        <Card className="p-4 bg-gray-100 dark:bg-gray-800 relative">
+          <Label className="text-gray-900 dark:text-gray-100">Generated Git Command</Label>
+          <Button
+            size="sm"
+            className="absolute top-4 right-4"
+            onClick={() => {
+              navigator.clipboard.writeText(command);
+            }}
+          >
+            Copy
+          </Button>
+          <pre className="mt-2 whitespace-pre-wrap p-4 rounded-md text-sm font-mono text-gray-900 dark:text-gray-100">
+            {command}
+          </pre>
+        </Card>
+      )}
+    </Card>
   );
 }

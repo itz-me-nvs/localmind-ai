@@ -59,9 +59,10 @@ export default function JSONFormatter() {
         />
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 items-center justify-between">
 
-        <Button  onClick={handleFormat}
+       <div className='flex gap-2'>
+       <Button  onClick={handleFormat}
         
         >
           Format & Validate
@@ -73,11 +74,12 @@ export default function JSONFormatter() {
         >
           Clear
         </Button>
+       </div>
 
         {formatted && (
-          <button
+          <Button
+          variant={'ghost'}
             onClick={handleCopy}
-            className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg transition flex items-center gap-1"
           >
             {copied ? (
               <>
@@ -90,7 +92,7 @@ export default function JSONFormatter() {
                 Copy
               </>
             )}
-          </button>
+          </Button>
         )}
       </div>
 

@@ -1,5 +1,9 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import CryptoJS from "crypto-js";
 import { useState } from "react";
 
@@ -45,46 +49,56 @@ export default function EncryptionTester() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-2 rounded-xl">
-      <h2 className="text-2xl font-bold mb-4">Encryption / Decryption Tester</h2>
-      <input
-        type="text"
-        placeholder="Enter text"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        className="w-full border p-3 rounded-md mb-3"
-      />
-      <input
-        type="text"
-        placeholder="Enter secret key"
-        value={secret}
-        onChange={(e) => setSecret(e.target.value)}
-        className="w-full border p-3 rounded-md mb-3"
-      />
-      <div className="flex gap-2 mb-4">
-        <button onClick={handleEncrypt} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-          Encrypt
-        </button>
-        <button onClick={handleDecrypt} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-          Decrypt
-        </button>
-        <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">
-          Clear
-        </button>
+    <Card className="w-full mx-auto p-4 bg-white dark:bg-gray-900 border-none shadow-none rounded-xl space-y-4">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Encryption / Decryption Tester</h2>
+
+      <div className="space-y-2">
+        <Label htmlFor="text">Text</Label>
+        <Input
+          id="text"
+          type="text"
+          placeholder="Enter text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
       </div>
-      {error && <p className="text-red-500 mb-2">{error}</p>}
+
+      <div className="space-y-2">
+        <Label htmlFor="secret">Secret Key</Label>
+        <Input
+          id="secret"
+          type="text"
+          placeholder="Enter secret key"
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={handleEncrypt}>Encrypt</Button>
+        <Button onClick={handleDecrypt}>Decrypt</Button>
+        <Button onClick={handleClear} variant="secondary">Clear</Button>
+      </div>
+
+      {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+
       {encrypted && (
-        <div className="mb-2">
-          <h4 className="font-semibold">Encrypted:</h4>
-          <pre className="bg-gray-100 p-3 rounded-md break-all">{encrypted}</pre>
-        </div>
+        <CardContent className="space-y-2">
+          <h4 className="font-semibold text-gray-700 dark:text-gray-200">Encrypted</h4>
+          <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md break-all text-sm text-gray-900 dark:text-gray-100">
+            {encrypted}
+          </pre>
+        </CardContent>
       )}
+
       {decrypted && (
-        <div className="mb-2">
-          <h4 className="font-semibold">Decrypted:</h4>
-          <pre className="bg-gray-100 p-3 rounded-md">{decrypted}</pre>
-        </div>
+        <CardContent className="space-y-2">
+          <h4 className="font-semibold text-gray-700 dark:text-gray-200">Decrypted</h4>
+          <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-900 dark:text-gray-100">
+            {decrypted}
+          </pre>
+        </CardContent>
       )}
-    </div>
+    </Card>
   );
 }

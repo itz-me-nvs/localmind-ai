@@ -1,5 +1,9 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 
 export default function UUIDGenerator() {
@@ -22,7 +26,6 @@ export default function UUIDGenerator() {
       return v.toString(16);
     });
   }
-  
 
   const handleCopyAll = () => {
     navigator.clipboard.writeText(uuids.join('\n'));
@@ -33,49 +36,39 @@ export default function UUIDGenerator() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-2 rounded-lg">
-      <h2 className="text-2xl font-bold mb-4">UUID Generator</h2>
+    <Card className="w-full mx-auto border-none shadow-none bg-white dark:bg-gray-900 space-y-6 p-4 rounded-xl">
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">UUID Generator</h1>
 
-      <div className="flex gap-4 items-center mb-4">
-        <label htmlFor="count" className="text-sm font-medium">Count:</label>
-        <input
-          id="count"
-          type="number"
-          value={count}
-          min={1}
-          max={100}
-          onChange={(e) => setCount(Number(e.target.value))}
-          className="w-20 px-3 py-1 border rounded"
-        />
-        <button
-          onClick={generateUUIDs}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          Generate
-        </button>
-        <button
-          onClick={handleClear}
-          className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 transition"
-        >
-          Clear
-        </button>
+      <div className="flex flex-wrap gap-4 items-end">
+        <div className="flex flex-col space-y-1">
+          <Label htmlFor="count" className="text-sm text-gray-700 dark:text-gray-200">Count</Label>
+          <Input
+            id="count"
+            type="number"
+            value={count}
+            min={1}
+            max={100}
+            onChange={(e) => setCount(Number(e.target.value))}
+            className="w-24"
+          />
+        </div>
+        <Button onClick={generateUUIDs}>Generate</Button>
+        <Button onClick={handleClear} variant="secondary">Clear</Button>
         {uuids.length > 0 && (
-          <button
-            onClick={handleCopyAll}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-          >
-            Copy All
-          </button>
+          <Button onClick={handleCopyAll} variant="outline">Copy All</Button>
         )}
       </div>
 
       {uuids.length > 0 && (
-        <ul className="bg-gray-100 p-4 rounded font-mono text-sm space-y-1">
-          {uuids.map((uuid, index) => (
-            <li key={index}>{uuid}</li>
-          ))}
-        </ul>
+        <CardContent className="space-y-2">
+          <h3 className="font-semibold text-gray-700 dark:text-gray-200">Generated UUIDs</h3>
+          <ul className="bg-gray-100 dark:bg-gray-800 p-4 rounded font-mono text-sm space-y-1 text-gray-800 dark:text-gray-100">
+            {uuids.map((uuid, index) => (
+              <li key={index}>{uuid}</li>
+            ))}
+          </ul>
+        </CardContent>
       )}
-    </div>
+    </Card>
   );
 }
