@@ -65,17 +65,12 @@ import {
   SunIcon, WrenchIcon
 } from "lucide-react";
 import moment from "moment";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import { redirect, useParams, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-const CodeEditor = dynamic(
-  () => import("@uiw/react-textarea-code-editor").then((mod) => mod.default),
-  { ssr: true }
-);
 
 export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [input, setInput] = useState("");
@@ -635,6 +630,129 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     }
   }
 
+  const messageEditHandler = async(message: string, id: number) => {
+    console.log("message", message, id, chat);
+
+    let messages: OllamaAPIChatRequestModel[] = []
+    let chatSummary = "";
+
+    const abortController = new AbortController();
+    setAbortController(abortController);
+    if(keepChatMemory){
+      chatSummary = await summarizeChatHistory();
+    }
+
+
+    messages = [
+      {
+        role: "system",
+        content: `You are a helpful, respectful AI assistant. Provide accurate, concise responses in English. Avoid guessing. If you don’t know something, reply with "I don't know". Remember any information the user shares about their name, location, or preferences. Here's a summary of the prior chat: ${chatSummary}`
+      },      
+      {
+        role: "user",
+        content: message,
+      },
+    ];
+
+    try {
+      const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: selectedModel || "qwen2.5:0.5b", // Adjust model as needed
+          messages: messages ?? [],
+          stream: true,
+        }),
+        signal: abortController.signal,
+      });
+
+      if (!response.body) throw new Error("Readable stream not available");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let result = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) break;
+
+        const textChunk = decoder.decode(value, { stream: true });
+
+        // Ensure new messages are properly split
+        const messages = textChunk.trim().split("\n").filter(Boolean);
+
+        for (const message of messages) {
+          try {
+            const parsed = JSON.parse(message);
+            if (parsed.message) {
+              result += parsed.message?.content;
+
+              setChat((prev) => {
+                const updatedChat = [...prev];
+
+                return updatedChat.map((item) => {
+                  if((item.id + 1) && (item.id == id + 1 && item.role == 'assistant')){
+                    return {
+                      ...item,
+                      content: result
+                    }
+                  }
+                  return item;
+                });
+              });
+            }
+          } catch (error) {
+            toast.error("Something went wrong", {
+              style: {
+                backgroundColor: "hsl(var(--destructive))",
+                color: "hsl(var(--destructive-foreground))",
+              },
+            });
+          }
+        }
+      }
+
+      // const newMessage = [
+      //   {
+      //     role: "user",
+      //     content: input,
+      //   },
+      //   {
+      //     role: "assistant",
+      //     content: result,
+      //   },
+      // ];
+
+      // await addMessage(
+      //   chatID,
+      //   JSON.stringify(newMessage),
+      //   "",
+      //   "assistant",
+      //   keepChatMemory
+      // );
+    } catch (error: any) {
+
+      if(error?.name == 'AbortError'){
+        return;
+      }
+      
+      toast.error("Something went wrong", {
+        style: {
+          backgroundColor: "hsl(var(--destructive))",
+          color: "hsl(var(--destructive-foreground))",
+        },
+      });
+      throw error;
+    }
+
+    finally {
+      setIsLoading(false);
+      setAbortController(null);
+      // setChatContainerFocus(false);
+    }
+
+  }
+
   return (
     <div className="h-screen mb-3 text-gray-900 dark:text-gray-100 overflow-hidden bg-gray-100 dark:bg-gray-900">
       {
@@ -825,7 +943,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   {/* Chat Content Area */}
   <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-6 mt-5 mb-8">
     {isSubmitted ? (
-      <OllamaChat chatList={chat} isLoading={isLoading} />
+      <OllamaChat chatList={chat} isLoading={isLoading} messageEditHandler={messageEditHandler}/>
     ) : (
       <div className="flex justify-center items-center h-full z-50">
         <Image

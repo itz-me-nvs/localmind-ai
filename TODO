@@ -47,11 +47,6 @@ TOOLS:-
   e. Developer Helpers
 
 
-  Git Command Generator	Generate Git commands based on input task description (e.g., "create new branch and push").
-File to Base64 Converter	Upload a file and get the Base64 string output.
-Common Code Snippets	Frequently used code snippets for devs (e.g., debounce function, deep copy, array chunk).
-
-
 # Future
 
 PWA Offline Support
