@@ -50,7 +50,7 @@ export default function OllamaChat({
     <div className="w-full flex space-y-4 px-4 overflow-y-auto dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <div className="max-w-screen-md w-full m-auto flex flex-col space-y-4 mb-10">
         {chatList.map((item) => (
-          <div key={item.id} className={`${item.id == 0 ? "hidden" : ""}`}>
+          <div key={item.messageId} className={`${item.messageId == 0 ? "hidden" : ""}`}>
             <div
               className={`flex w-full group items-start gap-3 text-wrap break-words whitespace-pre-wrap ${
                 item.role === "user" ? "justify-end" : "justify-start mb-4"
@@ -92,7 +92,7 @@ export default function OllamaChat({
                         <span className="text-sm font-medium">Retry</span>
                       </Button>
                     </div>
-                  ) : itemEdit?.id == item.id ? (
+                  ) : itemEdit?.messageId == item.messageId ? (
                     <div className="w-full flex flex-col">
                       <Textarea
                         className="max-w-2xl min-w-[400px] text-xl bg-background-message focus-visible:ring-0 focus:outline-none  border-none focus:ring-0 shadow-none outline-none break-words resize-none overflow-auto"
@@ -100,7 +100,7 @@ export default function OllamaChat({
                         value={itemEdit.content}
                         onChange={(e) =>
                           setItemEdit({
-                            ...itemEdit,
+                            ...itemEdit!,
                             content: e.target.value,
                           })
                         }
@@ -120,17 +120,19 @@ export default function OllamaChat({
                             setItemEdit(null);
                             itemEdit &&
                               chatList.map((item) => {
-                                if (item.id == itemEdit.id) {
+                                if (item.messageId == itemEdit.messageId) {
+                                  console.log("itemme", item.messageId);
+                                  
                                   item.content = itemEdit.content;
                                   const findAssistant = chatList.find(
-                                    item => item.id + 1 && item.role === "assistant"
+                                    i => i.messageId == item.messageId + 1 && i.role === "assistant"
                                   )
                                   
                                   if(findAssistant){
                                     findAssistant.content = '...'
                                   }
 
-                                  messageEditHandler(itemEdit.content, item.id);
+                                  messageEditHandler(itemEdit.content, item.messageId);
                                 }
                               });
                           }}

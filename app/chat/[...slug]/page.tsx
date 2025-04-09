@@ -39,6 +39,7 @@ import {
 import {
   addMessage,
   clearMessages,
+  editMessage,
   getAllMessages,
   getMessages,
   renameChat,
@@ -82,6 +83,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       content:
         "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
       id: 0,
+      messageId: 0,
       isError: false,
     },
   ]);
@@ -220,6 +222,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         content:
           "Act as an AI Assistant and provide clear, concise, and accurate responses in English. Maintain a professional and respectful tone, avoiding offensive language. If you do not know the answer, simply respond with 'I don't know' without making up information.",
         id: 0,
+        messageId: 0,
         isError: false,
         keepChat: false,
       },
@@ -238,6 +241,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
           chatMessage.forEach((item: ChatModel) => {
             updatedChats.push({
               id: updatedChats.length + 1,
+              messageId: item.messageId,
               content: item.content,
               isError: false,
               role: item.role,
@@ -295,6 +299,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       ...prev,
       {
         id: prev.length + 1,
+        messageId: prev.length,
         content: input,
         role: "user",
         isError: false,
@@ -409,6 +414,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         ...prev,
         {
           id: prev.length + 1,
+          messageId: prev.length,
           content: "",
           role: "assistant",
           isError: false,
@@ -459,14 +465,18 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
       setAbortController(null);
 
+      const currentChatLen = chat.length;
+
       const newMessage = [
         {
           role: "user",
           content: input,
+          messageId: currentChatLen,
         },
         {
           role: "assistant",
           content: result,
+          messageId: currentChatLen + 1,
         },
       ];
 
@@ -630,8 +640,8 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     }
   }
 
-  const messageEditHandler = async(message: string, id: number) => {
-    console.log("message", message, id, chat);
+  const messageEditHandler = async(message: string, userMessageId: number) => {
+    console.log("message", message, userMessageId, chat);
 
     let messages: OllamaAPIChatRequestModel[] = []
     let chatSummary = "";
@@ -691,7 +701,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                 const updatedChat = [...prev];
 
                 return updatedChat.map((item) => {
-                  if((item.id + 1) && (item.id == id + 1 && item.role == 'assistant')){
+                  if((item.messageId + 1) && (item.messageId == userMessageId + 1 && item.role == 'assistant')){
                     return {
                       ...item,
                       content: result
@@ -712,24 +722,24 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
         }
       }
 
-      // const newMessage = [
-      //   {
-      //     role: "user",
-      //     content: input,
-      //   },
-      //   {
-      //     role: "assistant",
-      //     content: result,
-      //   },
-      // ];
+      const editedMessage = [
+        {
+          role: "user",
+          content: message,
+          messageId: userMessageId
+        },
+        {
+          role: "assistant",
+          content: result,
+          messageId: userMessageId + 1
+        },
+      ];
 
-      // await addMessage(
-      //   chatID,
-      //   JSON.stringify(newMessage),
-      //   "",
-      //   "assistant",
-      //   keepChatMemory
-      // );
+      // update in indexDB for the edited message
+      await editMessage(
+        chatID,
+        editedMessage
+      );
     } catch (error: any) {
 
       if(error?.name == 'AbortError'){

@@ -1,5 +1,6 @@
 export interface ChatModel {
     id: number;
+    messageId: number;
     content: string;
     role: string;
     isError: boolean
@@ -23,4 +24,10 @@ export interface ChatHistoryModel {
     dateInFormat: string;
     date: string;
     dataClosed: boolean
+}
+
+export interface ChatMessageIndexDBSaveModel {
+    role: string;
+    content: string;
+    messageId: number;
 }

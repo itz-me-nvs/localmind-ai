@@ -1,3 +1,4 @@
+import { ChatMessageIndexDBSaveModel } from '@/lib/model/chatModel';
 import { openDB } from 'idb';
 
 const DB_NAME = 'chatDB';
@@ -43,6 +44,43 @@ export const addMessage = async(chatId: string, message: string,title: string, s
 
     await tx.done;
 }
+
+
+export const editMessage = async (
+    chatId: string,
+    editedMessages: ChatMessageIndexDBSaveModel[]
+  ): Promise<void> => {
+    const db = await dbPromise;
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+  
+    const existingChat = await store.get(chatId);
+    if (!existingChat || !existingChat.messages?.length) return;
+  
+    const messageBlock = existingChat.messages[0];
+    const currentMessages: ChatMessageIndexDBSaveModel[] = JSON.parse(messageBlock.message);
+  
+    let isUpdated = false;
+
+    console.log("editedMessages", editedMessages);
+    
+  
+    for (const edited of editedMessages) {
+      const index = currentMessages.findIndex(msg => msg.messageId === edited.messageId);
+      if (index !== -1) {
+        currentMessages[index].content = edited.content;
+        isUpdated = true;
+      }
+    }
+  
+    if (isUpdated) {
+      messageBlock.message = JSON.stringify(currentMessages);
+      await store.put(existingChat);
+    }
+  
+    await tx.done;
+  };
+  
 
 
 export const getMessages = async(chatId: string)=> {
