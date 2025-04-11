@@ -55,37 +55,35 @@ export const editMessage = async (
     const store = tx.objectStore(STORE_NAME);
   
     const existingChat = await store.get(chatId);
-    if (!existingChat || !existingChat.messages?.length) return;
-
+    if (!existingChat || !Array.isArray(existingChat.messages)) return;
+  
     let isUpdated = false;
   
-    const messageBlock = existingChat.messages;
-
-    let i = 0;
-    for (const message of messageBlock) {
-        const messages = JSON.parse(message.message);
-
-        for (const editedMessage of editedMessages) {
-            const editedMessageIndex = messages.findIndex((m: any) => m.messageId === editedMessage.messageId);
-            if (editedMessageIndex !== -1) {
-                messages[editedMessageIndex].content = editedMessage.content;
-                isUpdated = true;
-            }
+    existingChat.messages = existingChat.messages.map((messageObj: any) => {
+      const messages = JSON.parse(messageObj.message);
+  
+      const updatedMessages = messages.map((msg: any) => {
+        const edited = editedMessages.find(m => m.messageId === msg.messageId);
+        if (edited) {
+          isUpdated = true;
+          return { ...msg, content: edited.content };
         }
-
-        messageBlock[i].message = JSON.stringify(messages);
-        i++;
-
-    }
+        return msg;
+      });
+  
+      return {
+        ...messageObj,
+        message: JSON.stringify(updatedMessages),
+      };
+    });
   
     if (isUpdated) {
-
-    existingChat.messages = messageBlock;      
       await store.put(existingChat);
     }
   
     await tx.done;
   };
+  
   
 
 
