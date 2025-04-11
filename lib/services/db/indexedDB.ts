@@ -56,25 +56,31 @@ export const editMessage = async (
   
     const existingChat = await store.get(chatId);
     if (!existingChat || !existingChat.messages?.length) return;
-  
-    const messageBlock = existingChat.messages[0];
-    const currentMessages: ChatMessageIndexDBSaveModel[] = JSON.parse(messageBlock.message);
-  
-    let isUpdated = false;
 
-    console.log("editedMessages", editedMessages);
-    
+    let isUpdated = false;
   
-    for (const edited of editedMessages) {
-      const index = currentMessages.findIndex(msg => msg.messageId === edited.messageId);
-      if (index !== -1) {
-        currentMessages[index].content = edited.content;
-        isUpdated = true;
-      }
+    const messageBlock = existingChat.messages;
+
+    let i = 0;
+    for (const message of messageBlock) {
+        const messages = JSON.parse(message.message);
+
+        for (const editedMessage of editedMessages) {
+            const editedMessageIndex = messages.findIndex((m: any) => m.messageId === editedMessage.messageId);
+            if (editedMessageIndex !== -1) {
+                messages[editedMessageIndex].content = editedMessage.content;
+                isUpdated = true;
+            }
+        }
+
+        messageBlock[i].message = JSON.stringify(messages);
+        i++;
+
     }
   
     if (isUpdated) {
-      messageBlock.message = JSON.stringify(currentMessages);
+
+    existingChat.messages = messageBlock;      
       await store.put(existingChat);
     }
   
