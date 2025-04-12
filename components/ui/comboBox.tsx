@@ -19,31 +19,29 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
-
-interface ComboboxProps<T extends string | {value: string, label: string}> {
-    className?: string,
-    comboBoxList: T[],
-    selectedItemHandler: (item: string) => void,
-    placeHolder?: string,
-    defaultValue?: string
+interface ComboboxProps<T extends string | { value: string; label: string }> {
+  className?: string
+  comboBoxList: T[]
+  selectedItemHandler: (item: string) => void
+  placeHolder?: string
+  defaultValue?: string
 }
 
-export function Combobox<T extends string | {value: string, label: string}>({defaultValue, comboBoxList, className, placeHolder, selectedItemHandler}: ComboboxProps<T>) {
+export function Combobox<T extends string | { value: string; label: string }>({
+  defaultValue,
+  comboBoxList,
+  className,
+  placeHolder,
+  selectedItemHandler,
+}: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false)
-  const [value, setValue] = React.useState(defaultValue || '')
+  const [value, setValue] = React.useState(defaultValue || "")
 
+  const normalizeList = comboBoxList.map((item) =>
+    typeof item === "string" ? { value: item, label: item } : item
+  ) as { value: string; label: string }[]
 
-  const normalizeList = comboBoxList.map(item => {
-    if(typeof item == 'string'){
-        return {
-            value: item,
-            label: item}
-    }
-    return item
-  }) as {value: string, label: string}[]
-  
-
-  const selectedTool = normalizeList.find((framework) => framework.value === value)
+  const selectedTool = normalizeList.find((item) => item.value === value)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -52,17 +50,20 @@ export function Combobox<T extends string | {value: string, label: string}>({def
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className={cn(
+            "min-w-[200px] justify-between overflow-hidden text-ellipsis whitespace-nowrap",
+            className
+          )}
         >
-          {value
-            ? selectedTool?.label
-            : placeHolder || 'Select'}
+          <span className="truncate">
+            {value ? selectedTool?.label : placeHolder || "Select"}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="min-w-[200px] p-0">
         <Command>
-          <CommandInput placeholder={placeHolder || 'Select'} />
+          <CommandInput placeholder={placeHolder || "Select"} />
           <CommandList>
             <CommandEmpty>No items found.</CommandEmpty>
             <CommandGroup>
@@ -71,8 +72,9 @@ export function Combobox<T extends string | {value: string, label: string}>({def
                   key={item.value}
                   value={item.value}
                   onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue)
-                    selectedItemHandler(currentValue === value ? (defaultValue || '') : currentValue)
+                    const newValue = currentValue === value ? "" : currentValue
+                    setValue(newValue)
+                    selectedItemHandler(newValue)
                     setOpen(false)
                   }}
                 >
@@ -82,7 +84,7 @@ export function Combobox<T extends string | {value: string, label: string}>({def
                       value === item.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {item.label}
+                  <span className="truncate">{item.label}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

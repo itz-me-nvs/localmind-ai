@@ -13,18 +13,16 @@ export default function JSONFormatter() {
 
   const handleFormat = () => {
     try {
-        console.log("value", input);
-        
-     if(!input){
-       setError('❌ Input is empty');
-       setFormatted('');
-       return
-     }
+      if (!input) {
+        setError('❌ Input is empty');
+        setFormatted('');
+        return;
+      }
 
-     const parsed = JSON5.parse(input);
-     const pretty = JSON.stringify(parsed, null, 2);
-     setFormatted(pretty);
-     setError('');
+      const parsed = JSON5.parse(input);
+      const pretty = JSON.stringify(parsed, null, 2);
+      setFormatted(pretty);
+      setError('');
     } catch (err: any) {
       setError('❌ Invalid JSON: ' + err.message);
       setFormatted('');
@@ -45,42 +43,33 @@ export default function JSONFormatter() {
   };
 
   return (
-    <div className="w-full mx-auto bg-white space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">JSON Formatter & Validator</h1>
+    <div className="w-full mx-auto bg-white dark:bg-gray-900 space-y-6 rounded-xl shadow-sm">
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+        JSON Formatter & Validator
+      </h1>
 
       <div className="space-y-2">
-        <label className="font-semibold text-gray-700">Raw JSON Input</label>
+        <label className="font-semibold text-gray-700 dark:text-gray-300">Raw JSON Input</label>
         <textarea
           rows={10}
-          className="w-full border border-gray-300 focus:outline-none rounded-lg p-3 font-mono text-sm resize-y transition"
+          className="w-full border border-gray-300 dark:border-gray-700 focus:outline-none rounded-lg p-3 font-mono text-sm resize-y transition bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder='Paste or type your JSON here...'
+          placeholder="Paste or type your JSON here..."
         />
       </div>
 
       <div className="flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex gap-2">
+          <Button onClick={handleFormat}>Format & Validate</Button>
 
-       <div className='flex gap-2'>
-       <Button  onClick={handleFormat}
-        
-        >
-          Format & Validate
-        </Button>
-
-        <Button  onClick={handleClear}
-       variant={'outline'}
-        
-        >
-          Clear
-        </Button>
-       </div>
+          <Button onClick={handleClear} variant={'outline'}>
+            Clear
+          </Button>
+        </div>
 
         {formatted && (
-          <Button
-          variant={'ghost'}
-            onClick={handleCopy}
-          >
+          <Button variant={'ghost'} onClick={handleCopy}>
             {copied ? (
               <>
                 <Check className="w-4 h-4" />
@@ -97,15 +86,15 @@ export default function JSONFormatter() {
       </div>
 
       {error && (
-        <div className="text-red-600 font-medium bg-red-100 p-3 rounded-lg border border-red-300">
+        <div className="text-red-600 font-medium bg-red-100 dark:bg-red-900 dark:text-red-300 p-3 rounded-lg border border-red-300 dark:border-red-700">
           {error}
         </div>
       )}
 
       {formatted && (
         <div className="space-y-2">
-          <label className="font-semibold text-gray-700">Formatted Output</label>
-          <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded-lg border font-mono text-sm max-h-[500px] overflow-auto">
+          <label className="font-semibold text-gray-700 dark:text-gray-300">Formatted Output</label>
+          <pre className="whitespace-pre-wrap bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700 font-mono text-sm max-h-[500px] overflow-auto text-gray-800 dark:text-gray-100">
             {formatted}
           </pre>
         </div>

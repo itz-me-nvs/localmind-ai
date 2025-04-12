@@ -68,7 +68,7 @@ export default function TextCaseConverter() {
 
       <Textarea
         rows={5}
-        className="font-mono text-sm resize-y outline-none focus:outline-none"
+        className="font-mono text-sm resize-y outline-none focus:outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="Enter your text..."

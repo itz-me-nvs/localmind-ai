@@ -49,13 +49,19 @@ export default function UUIDGenerator() {
             min={1}
             max={100}
             onChange={(e) => setCount(Number(e.target.value))}
-            className="w-24"
+            className="w-24 dark:bg-gray-800 dark:text-white dark:border-gray-600"
           />
         </div>
-        <Button onClick={generateUUIDs}>Generate</Button>
-        <Button onClick={handleClear} variant="secondary">Clear</Button>
+        <Button onClick={generateUUIDs}>
+          Generate
+        </Button>
+        <Button onClick={handleClear} variant="secondary" className="bg-gray-300 dark:bg-gray-700 dark:text-white">
+          Clear
+        </Button>
         {uuids.length > 0 && (
-          <Button onClick={handleCopyAll} variant="outline">Copy All</Button>
+          <Button onClick={handleCopyAll} variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-100">
+            Copy All
+          </Button>
         )}
       </div>
 

@@ -7,7 +7,7 @@ export default function JWTTool() {
   const [mode, setMode] = useState<'decode' | 'encode'>('decode');
   const [token, setToken] = useState('');
   const [header, setHeader] = useState('');
-  const [decodedValues, setDecodedValues] = useState<{header: string, payload: string }>({header: '', payload: ''});
+  const [decodedValues, setDecodedValues] = useState<{ header: string; payload: string }>({ header: '', payload: '' });
   const [payload, setPayload] = useState('');
   const [error, setError] = useState('');
 
@@ -34,6 +34,7 @@ export default function JWTTool() {
     setError('');
     setHeader('');
     setPayload('');
+    setDecodedValues({ header: '', payload: '' });
 
     if (!token) {
       setError('Please enter a JWT.');
@@ -70,7 +71,7 @@ export default function JWTTool() {
       const encodedPayload = encodeBase64(payloadObj);
       const fakeSignature = 'signature-placeholder';
       setToken(`${encodedHeader}.${encodedPayload}.${fakeSignature}`);
-    } catch (err) {
+    } catch {
       setError('Invalid JSON in header or payload');
     }
   };
@@ -84,32 +85,38 @@ export default function JWTTool() {
     setHeader('');
     setPayload('');
     setError('');
+    setDecodedValues({ header: '', payload: '' });
   };
 
   const handleSetMode = (newMode: 'decode' | 'encode') => {
-   if(mode !== newMode){
-    setMode(newMode);
-   }
+    if (mode !== newMode) {
+      handleClear();
+      setMode(newMode);
+    }
   };
 
   return (
-    <div className="w-full p-2 mx-auto rounded-xl">
-             <h1 className="text-3xl font-bold text-gray-800">JWT Encoder</h1>
+    <div className="w-full p-4 rounded-xl bg-white dark:bg-gray-900 shadow-sm">
+      <h1 className="text-3xl font-bold mb-4 text-foreground">JWT {mode === 'decode' ? 'Decoder' : 'Encoder'}</h1>
 
-      <div className="flex border-b mt-4">
+      <div className="flex border-b border-border mb-4">
         <button
-          onClick={() => {
-           handleSetMode('decode'); 
-          }}
-          className={`px-4 py-2 ${mode === 'decode' ? 'border-b-2 border-gray-600 font-semibold' : 'text-gray-500'}`}
+          onClick={() => handleSetMode('decode')}
+          className={`px-4 py-2 ${
+            mode === 'decode'
+              ? 'border-b-2 border-primary text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          } transition`}
         >
           Decode
         </button>
         <button
-          onClick={() => {
-            handleSetMode('encode'); 
-          }}
-          className={`px-4 py-2 ${mode === 'encode' ? 'border-b-2 border-gray-600 font-semibold' : 'text-gray-500'}`}
+          onClick={() => handleSetMode('encode')}
+          className={`px-4 py-2 ${
+            mode === 'encode'
+              ? 'border-b-2 border-primary text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          } transition`}
         >
           Encode
         </button>
@@ -119,33 +126,16 @@ export default function JWTTool() {
         <>
           <textarea
             rows={4}
-            className="w-full border p-3 rounded-md mb-4 font-mono text-sm focus:outline-none"
+            className="w-full border border-border p-3 rounded-md mb-4 font-mono text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none"
             value={token}
             onChange={(e) => setToken(e.target.value)}
             placeholder="Paste JWT to decode..."
           />
           <div className="flex gap-2 mb-4">
-            {/* <button onClick={handleDecode} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 dark:hover:bg-gray-600 dark:bg-gray-700 transition">
-              Decode
-            </button> */}
-
-<Button
-onClick={handleDecode}
-className="flex items-center rounded transition"
->
-<span>Decode</span>
-</Button>
-
-<Button
-onClick={handleClear}
-variant={'outline'}
->
-<span>Clear</span>
-</Button>
-
-            {/* <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 transition">
+            <Button onClick={handleDecode}>Decode</Button>
+            <Button onClick={handleClear} variant="outline">
               Clear
-            </button> */}
+            </Button>
           </div>
         </>
       )}
@@ -154,64 +144,54 @@ variant={'outline'}
         <>
           <textarea
             rows={4}
-            className="w-full border p-3 rounded-md mb-3 font-mono text-sm focus:outline-none"
+            className="w-full border border-border p-3 rounded-md mb-3 font-mono text-sm bg-background text-foreground focus:outline-none"
             value={header}
             onChange={(e) => setHeader(e.target.value)}
             placeholder='Header: { "alg": "HS256", "typ": "JWT" }'
           />
           <textarea
             rows={6}
-            className="w-full border p-3 rounded-md mb-3 font-mono text-sm focus:outline-none"
+            className="w-full border border-border p-3 rounded-md mb-3 font-mono text-sm bg-background text-foreground focus:outline-none"
             value={payload}
             onChange={(e) => setPayload(e.target.value)}
             placeholder='Payload: { "user": "navas", "admin": true }'
           />
           <div className="flex gap-2 mb-4">
-
-            <Button
-onClick={handleEncode}
-className="flex items-center rounded transition"
->
-<span>Encode</span>
-</Button>
-
-            <Button
-onClick={handleClear}
-variant={'outline'}
->
-<span>Clear</span>
-</Button>
+            <Button onClick={handleEncode}>Encode</Button>
+            <Button onClick={handleClear} variant="outline">
+              Clear
+            </Button>
           </div>
         </>
       )}
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {error && <p className="text-destructive mb-4 font-medium">{error}</p>}
 
-      {mode === 'decode' && decodedValues.header.length && (
+      {mode === 'decode' && decodedValues.header.length > 0 && (
         <div className="mb-4">
-          <h3 className="font-semibold mb-1">Decoded Header</h3>
-          <pre className="bg-gray-100 p-4 rounded-md text-sm">{decodedValues.header}</pre>
+          <h3 className="font-semibold text-foreground mb-1">Decoded Header</h3>
+          <pre className="bg-muted p-4 rounded-md text-sm overflow-auto">{decodedValues.header}</pre>
         </div>
       )}
-      {mode === 'decode' && decodedValues.payload.length && (
+      {mode === 'decode' && decodedValues.payload.length > 0 && (
         <div className="mb-4">
-          <h3 className="font-semibold mb-1">Decoded Payload</h3>
-          <pre className="bg-gray-100 p-4 rounded-md text-sm">{decodedValues.payload}</pre>
+          <h3 className="font-semibold text-foreground mb-1">Decoded Payload</h3>
+          <pre className="bg-muted p-4 rounded-md text-sm overflow-auto">{decodedValues.payload}</pre>
         </div>
       )}
 
       {mode === 'encode' && token && (
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold">Encoded JWT</h3>
+            <h3 className="font-semibold text-foreground">Encoded JWT</h3>
             <button
               onClick={() => handleCopy(token)}
-              className="text-sm text-gray-500 hover:underline"
+              className="text-sm text-muted-foreground hover:underline"
             >
               Copy
             </button>
           </div>
-          <pre className="bg-gray-100 p-4 rounded-md text-sm break-all">{token}</pre>
+          <pre className="bg-muted p-4 rounded-md text-sm break-all overflow-auto">{token}</pre>
         </div>
       )}
     </div>

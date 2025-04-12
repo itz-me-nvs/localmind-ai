@@ -58,24 +58,29 @@ export default function APIRequestBuilder() {
   .then(data => console.log(data))
   .catch(err => console.error(err));`;
         break;
+
       case 'Python (requests)':
         snippetText = `import requests
 
 url = "${url}"
 headers = ${headerString}
 ${method !== 'GET' ? `data = ${JSON.stringify(parsedBody, null, 2)}
-` : ''}response = requests.${method.toLowerCase()}(url, ${method !== 'GET' ? 'json=data, ' : ''}headers=headers)
+
+` : ''}response = requests.${method.toLowerCase()}(url, ${
+          method !== 'GET' ? 'json=data, ' : ''
+        }headers=headers)
 print(response.json())`;
         break;
+
       case 'cURL':
         const curlHeaders = headers
           .filter((h) => h.key)
           .map((h) => `-H "${h.key}: ${h.value}"`)
           .join(' ');
-        snippetText = `curl -X ${method} ${curlHeaders} \
-  ${method !== 'GET' ? `-d '${JSON.stringify(parsedBody)}' \
-  ` : ''}${url}`;
+        snippetText = `curl -X ${method} ${curlHeaders} \\
+  ${method !== 'GET' ? `-d '${JSON.stringify(parsedBody)}' \\\n  ` : ''}${url}`;
         break;
+
       default:
         snippetText = '';
     }
@@ -95,16 +100,18 @@ print(response.json())`;
 
   return (
     <Card className="w-full mx-auto p-4 bg-white dark:bg-gray-900 border-none shadow-none rounded-xl space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">HTTP & API Request Builder</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        HTTP & API Request Builder
+      </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <Label className="mb-1 block">Method</Label>
+          <Label className="mb-1 block text-gray-700 dark:text-gray-200">Method</Label>
           <Select value={method} onValueChange={setMethod}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700">
               <SelectValue placeholder="Select method" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
               {METHODS.map((m) => (
                 <SelectItem key={m} value={m}>
                   {m}
@@ -114,8 +121,9 @@ print(response.json())`;
           </Select>
         </div>
         <div className="col-span-2">
-          <Label className="mb-1 block">URL</Label>
+          <Label className="mb-1 block text-gray-700 dark:text-gray-200">URL</Label>
           <Input
+            className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://api.example.com/data"
@@ -124,15 +132,17 @@ print(response.json())`;
       </div>
 
       <div>
-        <Label className="mb-1 block">Headers</Label>
+        <Label className="mb-1 block text-gray-700 dark:text-gray-200">Headers</Label>
         {headers.map((h, i) => (
           <div key={i} className="flex gap-2 mb-2">
             <Input
+              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700"
               placeholder="Key"
               value={h.key}
               onChange={(e) => handleHeaderChange(i, e.target.value, h.value)}
             />
             <Input
+              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700"
               placeholder="Value"
               value={h.value}
               onChange={(e) => handleHeaderChange(i, h.key, e.target.value)}
@@ -146,13 +156,15 @@ print(response.json())`;
 
       {method !== 'GET' && (
         <div>
-          <Label className="mb-1 block">Request Body (JSON)</Label>
+          <Label className="mb-1 block text-gray-700 dark:text-gray-200">Request Body (JSON)</Label>
           <Textarea
             rows={5}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder='{ "key": "value" }'
-            className={!isBodyValid ? 'border-red-500' : ''}
+            className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border ${
+              isBodyValid ? 'border-gray-300 dark:border-gray-700' : 'border-red-500'
+            }`}
           />
           {!isBodyValid && (
             <p className="text-red-500 text-sm mt-1">
@@ -163,12 +175,12 @@ print(response.json())`;
       )}
 
       <div>
-        <Label className="mb-1 block">Generate Snippet For</Label>
+        <Label className="mb-1 block text-gray-700 dark:text-gray-200">Generate Snippet For</Label>
         <Select value={language} onValueChange={setLanguage}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700">
             <SelectValue placeholder="Select language" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             {LANGUAGES.map((l) => (
               <SelectItem key={l} value={l}>
                 {l}
@@ -181,18 +193,16 @@ print(response.json())`;
       <Button onClick={generateSnippet}>Generate Snippet</Button>
 
       {snippet && (
-        <Card className="p-4 bg-gray-100 dark:bg-gray-800 relative">
+        <Card className="p-4 bg-gray-100 dark:bg-gray-800 relative mt-4">
           <Label className="text-gray-900 dark:text-gray-100">Generated Code</Label>
           <Button
             size="sm"
             className="absolute top-4 right-4"
-            onClick={() => {
-              navigator.clipboard.writeText(snippet);
-            }}
+            onClick={() => navigator.clipboard.writeText(snippet)}
           >
             Copy
           </Button>
-          <pre className="mt-2 whitespace-pre-wrap p-4 rounded-md text-sm font-mono text-gray-900 dark:text-gray-100">
+          <pre className="mt-2 whitespace-pre-wrap p-4 rounded-md text-sm font-mono text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
             {snippet}
           </pre>
         </Card>

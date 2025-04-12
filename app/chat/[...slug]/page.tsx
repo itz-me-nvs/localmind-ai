@@ -1,6 +1,6 @@
 "use client";
 
-import ToolsModal2 from "@/components/page/dialogs/toolsModal2";
+import ToolsModal2 from "@/components/page/dialogs/toolsModal";
 import OllamaChat from "@/components/page/ollamaChat";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -819,7 +819,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
             </SelectContent>
           </Select>
 
-          <SettingsIcon className="ml-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300" />
+          <SettingsIcon className="ml-2 cursor-pointer opacity-50 pointer-events-none text-sm text-gray-700 dark:text-gray-300" />
           </div>
         </div>
       </header>

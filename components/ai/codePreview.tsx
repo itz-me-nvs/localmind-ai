@@ -22,7 +22,9 @@ const CodePreview: React.FC<CodePreviewProps> = ({ code }) => {
     };
 
     React.useEffect(() => {
-        if (iframeRef.current) {
+        console.log("code", code);
+        
+        if (iframeRef.current && code) {
             const document = iframeRef.current.contentDocument;
             if (document) {
                 document.open();

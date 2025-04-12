@@ -71,16 +71,16 @@ export default function GitCommandGenerator() {
   };
 
   return (
-    <Card className="w-full mx-auto p-4 bg-white dark:bg-gray-900 border-none shadow-none rounded-xl space-y-6">
+    <Card className="w-full mx-auto p-6 bg-white dark:bg-gray-900 rounded-2xl space-y-6 transition-colors duration-300">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Git Command Generator</h1>
 
       <div>
-        <Label className="mb-1 block">Select Common Git Task</Label>
+        <Label className="mb-1 block text-gray-700 dark:text-gray-300">Select Common Git Task</Label>
         <Select onValueChange={setTask} value={task}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
             <SelectValue placeholder="Choose a task" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
             {gitTasks.map(({ label, value }) => (
               <SelectItem key={value} value={value}>
                 {label}
@@ -91,9 +91,10 @@ export default function GitCommandGenerator() {
       </div>
 
       <div>
-        <Label className="mb-1 block">Or Describe Your Own Task</Label>
+        <Label className="mb-1 block text-gray-700 dark:text-gray-300">Or Describe Your Own Task</Label>
         <Textarea
           rows={3}
+          className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
           placeholder="E.g., create a new branch and push to remote"
           value={task}
           onChange={(e) => setTask(e.target.value)}
@@ -107,23 +108,20 @@ export default function GitCommandGenerator() {
         </Button>
       </div>
 
-      {error && (
-        <p className="text-red-500 text-sm">{error}</p>
-      )}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
 
       {command && (
-        <Card className="p-4 bg-gray-100 dark:bg-gray-800 relative">
-          <Label className="text-gray-900 dark:text-gray-100">Generated Git Command</Label>
+        <Card className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 relative rounded-xl transition-all duration-300">
+          <Label className="text-gray-800 dark:text-gray-200">Generated Git Command</Label>
           <Button
             size="sm"
+            variant="secondary"
             className="absolute top-4 right-4"
-            onClick={() => {
-              navigator.clipboard.writeText(command);
-            }}
+            onClick={() => navigator.clipboard.writeText(command)}
           >
             Copy
           </Button>
-          <pre className="mt-2 whitespace-pre-wrap p-4 rounded-md text-sm font-mono text-gray-900 dark:text-gray-100">
+          <pre className="mt-2 whitespace-pre-wrap p-4 rounded-md text-sm font-mono text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-900">
             {command}
           </pre>
         </Card>

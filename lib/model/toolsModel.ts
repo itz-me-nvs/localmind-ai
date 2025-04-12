@@ -21,3 +21,7 @@ export type ToolDropdownType = {
     label: string,
     description?: string
 }
+
+export type ToolCardListType = {
+    toolSelectionHandler: (toolId: number)=> void;
+}

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,13 +43,13 @@ export default function CommonSnippets() {
   };
 
   return (
-    <Card className="w-full mx-auto p-2 rounded-2xl border-none shadow-none dark:bg-gray-900 bg-white">
-      <h2 className="text-3xl font-bold mb-6 text-foreground">
+    <Card className="w-full mx-auto p-4 rounded-2xl border-none shadow-lg dark:bg-gray-900 bg-white">
+      <h2 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">
         Common Code Snippets
       </h2>
 
       <div className="mb-6">
-        <Label className="mb-2 block text-sm text-muted-foreground">
+        <Label className="mb-2 block text-sm text-gray-700 dark:text-gray-300">
           Select a Code Snippet
         </Label>
         <Combobox
@@ -65,7 +65,7 @@ export default function CommonSnippets() {
       <div className="grid gap-4 mb-6">
         {snippet.inputs.map((inputName) => (
           <div key={inputName}>
-            <Label htmlFor={inputName} className="block text-sm mb-1">
+            <Label htmlFor={inputName} className="block text-sm mb-1 text-gray-700 dark:text-gray-300">
               {inputName}
             </Label>
             <Input
@@ -74,22 +74,22 @@ export default function CommonSnippets() {
               value={inputValues[inputName] || ""}
               onChange={handleInputChange}
               placeholder={`Enter ${inputName}`}
-              className="w-full"
+              className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-600"
             />
           </div>
         ))}
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <span className="text-muted-foreground text-sm">
+        <span className="text-gray-700 dark:text-gray-300 text-sm">
           Preview & Copy the generated snippet:
         </span>
-        <Button onClick={handleCopy} size="sm">
+        <Button onClick={handleCopy} size="sm" className="bg-green-600 text-white hover:bg-green-700">
           Copy Snippet
         </Button>
       </div>
 
-      <ScrollArea className="max-h-96 rounded-md border bg-muted px-4 py-3 font-mono text-sm overflow-auto">
+      <ScrollArea className="max-h-96 rounded-md border bg-gray-100 dark:bg-gray-800 px-4 py-3 font-mono text-sm text-gray-900 dark:text-white overflow-auto">
         <pre className="whitespace-pre-wrap leading-relaxed">{code}</pre>
       </ScrollArea>
     </Card>

@@ -49,28 +49,30 @@ export default function EncryptionTester() {
   };
 
   return (
-    <Card className="w-full mx-auto p-4 bg-white dark:bg-gray-900 border-none shadow-none rounded-xl space-y-4">
+    <Card className="max-w-3xl mx-auto p-4 bg-white dark:bg-gray-900 border-none shadow-none rounded-xl space-y-4">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Encryption / Decryption Tester</h2>
 
       <div className="space-y-2">
-        <Label htmlFor="text">Text</Label>
+        <Label htmlFor="text" className="text-gray-800 dark:text-gray-200">Text</Label>
         <Input
           id="text"
           type="text"
           placeholder="Enter text"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="secret">Secret Key</Label>
+        <Label htmlFor="secret" className="text-gray-800 dark:text-gray-200">Secret Key</Label>
         <Input
           id="secret"
           type="text"
           placeholder="Enter secret key"
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
+          className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500"
         />
       </div>
 
@@ -80,7 +82,7 @@ export default function EncryptionTester() {
         <Button onClick={handleClear} variant="secondary">Clear</Button>
       </div>
 
-      {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+      {error && <p className="text-red-500 dark:text-red-400 text-sm font-medium">{error}</p>}
 
       {encrypted && (
         <CardContent className="space-y-2">
@@ -94,7 +96,7 @@ export default function EncryptionTester() {
       {decrypted && (
         <CardContent className="space-y-2">
           <h4 className="font-semibold text-gray-700 dark:text-gray-200">Decrypted</h4>
-          <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-900 dark:text-gray-100">
+          <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md break-all text-sm text-gray-900 dark:text-gray-100">
             {decrypted}
           </pre>
         </CardContent>

@@ -76,11 +76,6 @@ export default function DevToolKit() {
           comboBoxList={devToolList.map(({ value, label }) => ({ value, label }))}
           selectedItemHandler={handleSelectedTool}
         />
-        {/* {selectedToolMeta?.description && (
-          <p className="text-sm text-muted-foreground mt-1">
-            💡 {selectedToolMeta.description}
-          </p>
-        )} */}
       </div>
 
       <AnimatePresence mode="wait">
