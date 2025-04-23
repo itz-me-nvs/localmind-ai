@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ToolCardListType } from "@/lib/model/toolsModel"
 import {
-  BrainIcon,
   BrushIcon,
   BugIcon,
   CogIcon,
@@ -90,17 +89,17 @@ const toolList: Tool[] = [
       type: "Developer Tool",
       tags: ["Toolkit", "DevTools", "Utility"],
     },
+    // {
+    //   id: 8,
+    //   title: "Project Memorization",
+    //   description: "To supercharge your coding speed, dive deep into your project's codebase and surroundings!",
+    //   icon: BrainIcon,
+    //   type: "Developer Tool",
+    //   tags: ["Memorization", "Project", "Productivity"],
+    //   disable: true,
+    // },
     {
       id: 8,
-      title: "Project Memorization",
-      description: "To supercharge your coding speed, dive deep into your project's codebase and surroundings!",
-      icon: BrainIcon,
-      type: "Developer Tool",
-      tags: ["Memorization", "Project", "Productivity"],
-      disable: true,
-    },
-    {
-      id: 9,
       title: "Technical Writing",
       description: "Craft compelling and informative technical content with our AI-powered writing assistant.",
       icon: NotebookPenIcon,
@@ -109,7 +108,7 @@ const toolList: Tool[] = [
       disable: true,
     },
     {
-      id: 10,
+      id: 9,
       title: "Daily checklist",
       description: "List of tasks to keep you organized and on track with your day-to-day tasks.",
       icon: ListCheckIcon,

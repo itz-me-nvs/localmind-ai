@@ -1,6 +1,7 @@
 "use client";
 
 import { AppStore, makeStore } from "@/lib/state/store";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Provider } from "react-redux";
 
@@ -11,6 +12,8 @@ interface Props {
 export const StoreProvider = ({ children }: Props) => {
   const storeRef = useRef<AppStore | null>(null);
   const [mounted, setMounted] = useState(false);
+  const queryClient = new QueryClient()
+
 
   useEffect(()=> {
     setMounted(true);
@@ -43,5 +46,9 @@ export const StoreProvider = ({ children }: Props) => {
       </div>
     );
 
-  return <Provider store={storeRef.current}>{children}</Provider>;
+  return <Provider store={storeRef.current}>
+    <QueryClientProvider client={queryClient}>
+    {children}
+    </QueryClientProvider>
+    </Provider>;
 };
