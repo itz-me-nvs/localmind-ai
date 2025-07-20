@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   API_ERROR_MESSAGES,
-  OLLAMA_BASE_URL
+  OLLAMA_BASE_URL,
 } from "@/lib/constants/common.constant";
 import { useOllamaModels } from "@/lib/hooks/useOllamaModels";
 import {
@@ -57,8 +57,14 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/state/hooks";
 import { formatBytes } from "@/lib/utils";
 // import { addMessage, getMessages } from "@/lib/services/db/indexedDB";
+import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { tool } from "@langchain/core/tools";
+import { ChatOllama } from "@langchain/ollama";
 import "@uiw/react-textarea-code-editor/dist.css";
 import axios, { AxiosError } from "axios";
+import "cheerio";
+import { AgentExecutor, createToolCallingAgent } from "langchain/agents";
 import {
   CircleStopIcon,
   Columns2Icon,
@@ -69,6 +75,7 @@ import {
   PencilLine,
   SearchIcon,
   SettingsIcon,
+  SquareDashedMousePointer,
   SunIcon,
   WrenchIcon,
 } from "lucide-react";
@@ -78,6 +85,7 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 
 export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [input, setInput] = useState("");
@@ -96,6 +104,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   const [modelList, setModelList] = useState<OllamaModelList[]>([]);
   const [promptModelOpen, setPromptModelOpen] = useState<boolean>(false);
   const [toolModelOpen, setToolModelOpen] = useState<boolean>(false);
+  const [agentModelOpen, setAgentModelOpen] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [chatContainerFocus, setChatContainerFocus] = useState(false);
 
@@ -258,7 +267,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
     dispatch(setModel(name));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     setIsSubmitted(true);
@@ -291,6 +300,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       const newPath = `/chat/${chatID}`;
       window.history.replaceState(null, "", newPath);
     }
+
     ollamaChatCompletion();
   };
 
@@ -345,101 +355,206 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
   };
 
   const ollamaChatCompletion = async () => {
-    let messages: OllamaAPIChatRequestModel[] = [];
-    let chatSummary = "";
-
-    const abortController = new AbortController();
-    setAbortController(abortController);
-
-    if (keepChatMemory) {
-      chatSummary = await summarizeChatHistory();
-    }
-
-    messages = [
-      {
-        role: "system",
-        content: `You are a helpful, respectful AI assistant. Provide accurate, concise responses in English. Avoid guessing. If you don’t know something, reply with "I don't know". Remember any information the user shares about their name, location, or preferences. Here's a summary of the prior chat: ${chatSummary}`,
-      },
-      {
-        role: "user",
-        content: input,
-      },
-    ];
-    console.log(chatSummary);
-
     try {
-      const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: selectedModel || "qwen2.5:0.5b", // Adjust model as needed
-          messages: messages ?? [],
-          stream: true,
-        }),
-        signal: abortController.signal,
-      });
-
-      if (!response.body) throw new Error("Readable stream not available");
-      setIsLoading(false);
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
       let result = "";
+      if (!agentModelOpen) {
+        let messages: OllamaAPIChatRequestModel[] = [];
+        let chatSummary = "";
 
-      setChat((prev) => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          messageId: prev.length,
-          content: "",
-          role: "assistant",
-          isError: false,
-          keepChat: keepChatMemory,
-        },
-      ]);
+        const abortController = new AbortController();
+        setAbortController(abortController);
 
-      while (true) {
-        const { value, done } = await reader.read();
+        if (keepChatMemory) {
+          chatSummary = await summarizeChatHistory();
+        }
 
-        if (done) break;
+        messages = [
+          {
+            role: "system",
+            content: `You are a helpful, respectful AI assistant. Provide accurate, concise responses in English. Avoid guessing. If you don’t know something, reply with "I don't know". Remember any information the user shares about their name, location, or preferences. Here's a summary of the prior chat: ${chatSummary}`,
+          },
+          {
+            role: "user",
+            content: input,
+          },
+        ];
+        console.log(chatSummary);
+        const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: selectedModel || "qwen2.5:0.5b", // Adjust model as needed
+            messages: messages ?? [],
+            stream: true,
+          }),
+          signal: abortController.signal,
+        });
 
-        const textChunk = decoder.decode(value, { stream: true });
+        if (!response.body) throw new Error("Readable stream not available");
+        setIsLoading(false);
 
-        // Ensure new messages are properly split
-        const messages = textChunk.trim().split("\n").filter(Boolean);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
 
-        for (const message of messages) {
-          try {
-            const parsed = JSON.parse(message);
-            if (parsed.message) {
-              result += parsed.message?.content;
+        setChat((prev) => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            messageId: prev.length,
+            content: "",
+            role: "assistant",
+            isError: false,
+            keepChat: keepChatMemory,
+          },
+        ]);
 
-              setChat((prev) => {
-                const updatedChat = [...prev];
+        while (true) {
+          const { value, done } = await reader.read();
 
-                return updatedChat.map((_, index) => {
-                  if (index == updatedChat.length - 1) {
-                    return {
-                      ..._,
-                      content: result,
-                    };
-                  }
-                  return _;
+          if (done) break;
+
+          const textChunk = decoder.decode(value, { stream: true });
+
+          // Ensure new messages are properly split
+          const messages = textChunk.trim().split("\n").filter(Boolean);
+
+          for (const message of messages) {
+            try {
+              const parsed = JSON.parse(message);
+              if (parsed.message) {
+                result += parsed.message?.content;
+
+                setChat((prev) => {
+                  const updatedChat = [...prev];
+
+                  return updatedChat.map((_, index) => {
+                    if (index == updatedChat.length - 1) {
+                      return {
+                        ..._,
+                        content: result,
+                      };
+                    }
+                    return _;
+                  });
                 });
+              }
+            } catch (error) {
+              toast.error("Error parsing JSON", {
+                style: {
+                  backgroundColor: "hsl(var(--destructive))",
+                  color: "hsl(var(--destructive-foreground))",
+                },
               });
             }
-          } catch (error) {
-            toast.error("Error parsing JSON", {
-              style: {
-                backgroundColor: "hsl(var(--destructive))",
-                color: "hsl(var(--destructive-foreground))",
-              },
-            });
           }
         }
-      }
 
-      setAbortController(null);
+        setAbortController(null);
+      } else {
+        // TODO: agent time tool seperation
+
+        // const loader = new CheerioWebBaseLoader("https://docs.smith.langchain.com/overview");
+        // const docs = await loader.load();
+
+        // const splitter = new RecursiveCharacterTextSplitter({
+        //   chunkSize: 1000,
+        //   chunkOverlap: 200,
+        // });
+
+        // const documents = await splitter.splitDocuments(docs);
+
+        // const vectorStore = await MemoryVectorStore.fromDocuments(
+        //   documents,
+        //   new OllamaEmbeddings()
+        // );
+
+        // const retriever = vectorStore.asRetriever();
+
+        // const retrieverTool = tool(
+        //   async ({ input }, config) => {
+        //     const docs = await retriever.invoke(input, config);
+        //     return docs.map((doc) => doc.pageContent).join("\n\n");
+        //   },
+        //   {
+        //     name: "langsmith_search",
+        //     description:
+        //       "Search for information about LangSmith. For any questions about LangSmith, you must use this tool!",
+        //     schema: z.object({
+        //       input: z.string(),
+        //     }),
+        //   }
+        // );
+        console.log("apiKey", process.env.NEXT_PUBLIC_TAVILY_API_KEY);
+        
+
+        const search = new TavilySearchResults({apiKey: process.env.NEXT_PUBLIC_TAVILY_API_KEY, maxResults: 2})
+
+        const getCurrentDateTool = tool(
+          async () => {
+            const date = new Date();
+            return `${date.toLocaleString()}`;
+          },
+          {
+            name: "get_current_date",
+            description: "tool used to get the current date",
+            schema: z.object({
+              input: z.string(),
+            }),
+          }
+        );
+
+        const tools = [getCurrentDateTool, search];
+
+        const ollamaModel = new ChatOllama({
+          model: "qwen2.5:0.5b",
+          temperature: 0,
+          maxRetries: 2,
+          baseUrl: OLLAMA_BASE_URL,
+          // other params...
+        });
+
+        const prompt = ChatPromptTemplate.fromMessages([
+          ["system", "You are a helpful assistant"],
+          ["placeholder", "{chat_history}"],
+          ["human", "{input}"],
+          ["placeholder", "{agent_scratchpad}"],
+        ]);
+
+        console.log(prompt.promptMessages);
+
+        const agent = createToolCallingAgent({
+          llm: ollamaModel,
+          tools: tools,
+          prompt: prompt,
+        });
+
+        const agentExecutor = new AgentExecutor({
+          agent: agent,
+          tools: tools,
+          verbose: true,
+        });
+
+        const executorResult = await agentExecutor.invoke({
+          input: input,
+          chat_history: [],
+        });
+
+        result = executorResult?.output || "";
+
+        console.log("executor result", executorResult);
+
+         setChat((prev) => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            messageId: prev.length,
+            content: result,
+            role: "assistant",
+            isError: false,
+            keepChat: keepChatMemory,
+          },
+        ]);
+      }
 
       const currentChatLen = chat.length;
 
@@ -458,7 +573,7 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
       let summarizeResponse = null;
 
-      console.log("chat.length", chat.length, chat);
+      console.log("newMessage", newMessage);
 
       if (chat.length < 2) {
         summarizeResponse = await axios.post(
@@ -480,6 +595,8 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
 
       const responseTitle = summarizeResponse?.data?.response || "";
       console.log(responseTitle);
+
+      
 
       await addMessage(
         chatID,
@@ -754,6 +871,57 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
       // setChatContainerFocus(false);
     }
   };
+
+  // groq test
+  // const model = new ChatGroq({
+  //   apiKey: "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",
+  //   model: "llama-3.3-70b-versatile",
+  //   temperature: 0
+  // })
+
+  //   useEffect(()=> {
+  //    const chatGroqCall = async ()=> {
+
+  //   const messages = [
+  //   new SystemMessage("Translate the following from English into Italian"),
+  //   new HumanMessage("hi!"),
+  // ];
+
+  // const result = await model.invoke(messages);
+  // console.log("result:content", result.content);
+
+  //    }
+
+  //    const webScrape = async()=> {
+  //      const response = await axios.post(
+  //           "/api/scrape",
+  //           {
+  //            url: "https://js.langchain.com/docs/integrations/document_loaders/web_loaders/web_puppeteer/",
+  //            selector: '.docMainContainer_fv3b'
+  //           },
+  //           {
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //             },
+  //           }
+  //         );
+
+  //         console.log("response", response.data);
+
+  //         // const messages = [
+  //         //    new SystemMessage("Ask as a AI assistant"),
+  //         //   new HumanMessage(`Use the following web content: \n\n${response.data} to answer this prompt: \n\n 'Is WebbaseLoader is only compatible with nodeJS?'`)
+  //         // ]
+
+  //         // const result = await model.invoke(messages)
+  //         // console.log("WebbaseLoader result", result);
+
+  //    }
+
+  //    webScrape()
+
+  //    chatGroqCall()
+  //   }, [])
 
   return (
     <>
@@ -1032,6 +1200,20 @@ export default function ChatPage({ slugParam }: { slugParam: string }) {
                       <EarthIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                       <span className="text-gray-700 dark:text-gray-300">
                         Fine tune
+                      </span>
+                    </div>
+
+                    <div
+                      onClick={() => setAgentModelOpen(!agentModelOpen)}
+                      className={`py-2 px-3 flex items-center gap-2 rounded-lg ${
+                        agentModelOpen
+                          ? "bg-gray-200 dark:bg-gray-700"
+                          : "bg-gray-100 dark:bg-background-secondary"
+                      } cursor-pointer`}
+                    >
+                      <SquareDashedMousePointer className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                      <span className="text-gray-700 dark:text-gray-300">
+                        Agent Mode
                       </span>
                     </div>
                   </div>

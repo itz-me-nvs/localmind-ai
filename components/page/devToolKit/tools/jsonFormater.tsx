@@ -11,6 +11,13 @@ export default function JSONFormatter() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
+/**
+ * The function `handleFormat` takes an input, parses it as JSON using JSON5, and then formats it with
+ * proper indentation before setting the formatted result or an error message.
+ * @returns The `handleFormat` function is returning either an error message if the input is empty or
+ * if there is an error parsing the JSON, or it is returning the pretty-formatted JSON string if the
+ * parsing is successful.
+ */
   const handleFormat = () => {
     try {
       if (!input) {
